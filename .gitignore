@@ -1,0 +1,30 @@
+# Binaries
+ralph
+*.exe
+
+# Ralph runtime files
+.call_count
+.circuit_breaker_*
+.exit_signals
+.last_reset
+.ralph_session
+.ralph_session_history
+.response_analysis
+progress.json
+status.json
+
+# Logs
+logs/
+*.log
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Go
+/vendor/

@@ -1,0 +1,42 @@
+{
+  "name": "default-loop",
+  "description": "Default Ralph loop configuration with Claude agent",
+  "steps": [
+    {
+      "type": "agent",
+      "name": "setup",
+      "config": {
+        "prompt_file": "SETUP_PROMPT.md",
+        "marker_file": ".ralph_setup_done",
+        "allowed_tools": "Write,Read,Edit,Glob,Grep,Bash,Task,TodoWrite,WebFetch,WebSearch",
+        "timeout": "15m",
+        "log_dir": "logs"
+      },
+      "timeout": "20m",
+      "max_retries": 1,
+      "retry_delay": "30s"
+    },
+    {
+      "type": "agent",
+      "name": "run-claude",
+      "config": {
+        "prompt_file": "LOOP_PROMPT.md",
+        "allowed_tools": "Write,Read,Edit,Glob,Grep,Bash,Task,TodoWrite,WebFetch,WebSearch",
+        "timeout": "15m",
+        "log_dir": "logs"
+      },
+      "timeout": "20m",
+      "max_retries": 1,
+      "retry_delay": "30s"
+    },
+    {
+      "type": "readme-check",
+      "name": "update-docs",
+      "enabled": true,
+      "continue_on_error": true,
+      "config": {
+        "readme_path": "README.md"
+      }
+    }
+  ]
+}
