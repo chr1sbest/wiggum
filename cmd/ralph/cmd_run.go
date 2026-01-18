@@ -7,6 +7,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"os/exec"
 	"os/signal"
 	"path/filepath"
 	"strings"
@@ -36,6 +37,10 @@ func runCmd(args []string) int {
 	fs.Parse(args)
 
 	if err := validateRunPreflight(*configFile); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		return 1
+	}
+	if err := validateClaudePreflight(); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return 1
 	}
@@ -244,6 +249,24 @@ func validateRunPreflight(configFile string) error {
 
 	if _, err := os.Stat(configFile); err != nil {
 		return fmt.Errorf("config file not found: %s", configFile)
+	}
+
+	return nil
+}
+
+func validateClaudePreflight() error {
+	if _, err := exec.LookPath("claude"); err != nil {
+		return fmt.Errorf("Claude Code is required but was not found in PATH.\n\nFix:\n  - Install Claude Code\n  - Ensure the `claude` binary is on your PATH\n  - Confirm it works: claude --help")
+	}
+
+	// Ensure the CLI is runnable (and not immediately failing due to a broken install).
+	cmd := exec.Command("claude", "--version")
+	if out, err := cmd.CombinedOutput(); err != nil {
+		msg := strings.TrimSpace(string(out))
+		if msg != "" {
+			return fmt.Errorf("Claude Code appears to be installed, but is not working:\n%s\n\nFix:\n  - Run `claude` once interactively to complete setup/auth\n  - Then retry `ralph run`", msg)
+		}
+		return fmt.Errorf("Claude Code appears to be installed, but is not working (%v).\n\nFix:\n  - Run `claude` once interactively to complete setup/auth\n  - Then retry `ralph run`", err)
 	}
 
 	return nil

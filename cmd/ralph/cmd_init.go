@@ -87,6 +87,11 @@ Examples:
 		os.Exit(1)
 	}
 
+	if err := validateClaudePreflight(); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+
 	configModel := strings.TrimSpace(*model)
 	analysisModel := configModel
 	if analysisModel == "" {
