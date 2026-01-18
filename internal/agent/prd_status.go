@@ -132,3 +132,75 @@ func LoadPRDStatus(path string) (*PRDStatus, error) {
 
 	return st, nil
 }
+
+// ResetFailedTasks changes all "failed" tasks back to "todo" so they can be retried.
+// Returns the number of tasks reset.
+func ResetFailedTasks(path string) (int, error) {
+	b, err := os.ReadFile(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return 0, nil
+		}
+		return 0, err
+	}
+	clean := stripJSONFences(string(b))
+	if clean == "" {
+		return 0, nil
+	}
+
+	var f prdFile
+	if err := json.Unmarshal([]byte(clean), &f); err != nil {
+		return 0, err
+	}
+
+	count := 0
+	for i := range f.Tasks {
+		if strings.ToLower(strings.TrimSpace(f.Tasks[i].Status)) == "failed" {
+			f.Tasks[i].Status = "todo"
+			count++
+		}
+	}
+
+	if count == 0 {
+		return 0, nil
+	}
+
+	out, err := json.MarshalIndent(f, "", "  ")
+	if err != nil {
+		return 0, err
+	}
+	return count, os.WriteFile(path, out, 0644)
+}
+
+// MarkTaskFailed updates the status of a task to "failed" in prd.json.
+// This prevents the task from being picked up again.
+func MarkTaskFailed(path, taskID string) error {
+	b, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+	clean := stripJSONFences(string(b))
+	if clean == "" {
+		return nil
+	}
+
+	var f prdFile
+	if err := json.Unmarshal([]byte(clean), &f); err != nil {
+		return err
+	}
+
+	// Find and update the task
+	for i := range f.Tasks {
+		if strings.TrimSpace(f.Tasks[i].ID) == strings.TrimSpace(taskID) {
+			f.Tasks[i].Status = "failed"
+			break
+		}
+	}
+
+	// Write back
+	out, err := json.MarshalIndent(f, "", "  ")
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(path, out, 0644)
+}

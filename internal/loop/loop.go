@@ -2,15 +2,17 @@ package loop
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"time"
 
-	"github.com/chris/go_ralph/internal/config"
-	"github.com/chris/go_ralph/internal/logger"
-	"github.com/chris/go_ralph/internal/loop/steps"
-	"github.com/chris/go_ralph/internal/resilience"
-	"github.com/chris/go_ralph/internal/status"
-	"github.com/chris/go_ralph/internal/tracker"
+	"github.com/chr1sbest/wiggum/internal/agent"
+	"github.com/chr1sbest/wiggum/internal/config"
+	"github.com/chr1sbest/wiggum/internal/logger"
+	"github.com/chr1sbest/wiggum/internal/loop/steps"
+	"github.com/chr1sbest/wiggum/internal/resilience"
+	"github.com/chr1sbest/wiggum/internal/status"
+	"github.com/chr1sbest/wiggum/internal/tracker"
 )
 
 // Status represents the current state of the loop.
@@ -57,6 +59,11 @@ type Loop struct {
 	trackerWriter   *tracker.Writer
 	runID           string
 	runStartedAt    time.Time
+
+	// Task loop tracking for max_loops_per_task
+	currentTaskID string
+	loopsOnTask   int
+	prdPath       string // Path to prd.json for marking tasks failed
 }
 
 // NewLoop creates a new loop executor.
@@ -109,6 +116,11 @@ func (l *Loop) writeRunState(status string, currentStep string, stepStartedAt ti
 // SetStepDelay sets the delay between steps.
 func (l *Loop) SetStepDelay(d time.Duration) {
 	l.stepDelay = d
+}
+
+// SetPRDPath sets the path to prd.json for task tracking.
+func (l *Loop) SetPRDPath(path string) {
+	l.prdPath = path
 }
 
 // SetConfig updates the loop configuration (for hot-reload).
@@ -233,11 +245,46 @@ func (l *Loop) countEnabledSteps() int {
 
 // Run executes the loop continuously until context is cancelled.
 func (l *Loop) Run(ctx context.Context) error {
+	backoff := l.stepDelay
+	const maxBackoff = 30 * time.Second
+
 	for {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
 		default:
+		}
+
+		// Check max_loops_per_task limit before running
+		if l.config.MaxLoopsPerTask > 0 && l.prdPath != "" {
+			prdStatus, _ := agent.LoadPRDStatus(l.prdPath)
+			if prdStatus != nil && prdStatus.CurrentTaskID != "" {
+				// Track which task we're working on
+				if prdStatus.CurrentTaskID != l.currentTaskID {
+					// New task, reset counter
+					l.currentTaskID = prdStatus.CurrentTaskID
+					l.loopsOnTask = 0
+				}
+				l.loopsOnTask++
+
+				// Check if we've exceeded max loops for this task
+				if l.loopsOnTask > l.config.MaxLoopsPerTask {
+					l.logger.Debug("Max loops per task reached, marking task as failed",
+						logger.F("task_id", l.currentTaskID),
+						logger.F("loops", l.loopsOnTask),
+						logger.F("max", l.config.MaxLoopsPerTask),
+					)
+					// Print visible notification
+					fmt.Printf("\n⚠️  Task %s failed after %d loops - moving to next task\n", l.currentTaskID, l.config.MaxLoopsPerTask)
+					if err := agent.MarkTaskFailed(l.prdPath, l.currentTaskID); err != nil {
+						l.logger.Debug("Failed to mark task as failed", logger.F("error", err))
+					}
+					// Reset counter and continue to next task
+					l.currentTaskID = ""
+					l.loopsOnTask = 0
+					continue
+				}
+			}
 		}
 
 		if err := l.RunOnce(ctx); err != nil {
@@ -248,13 +295,21 @@ func (l *Loop) Run(ctx context.Context) error {
 			if ctx.Err() != nil {
 				return ctx.Err()
 			}
-			l.logger.Debug("Loop iteration failed", logger.F("error", err))
-			// On error, wait before retrying
+			l.logger.Debug("Loop iteration failed", logger.F("error", err), logger.F("backoff", backoff))
+			// On error, wait with exponential backoff before retrying
 			select {
 			case <-ctx.Done():
 				return ctx.Err()
-			case <-time.After(l.stepDelay):
+			case <-time.After(backoff):
 			}
+			// Increase backoff for next failure (capped at maxBackoff)
+			backoff = time.Duration(float64(backoff) * 1.5)
+			if backoff > maxBackoff {
+				backoff = maxBackoff
+			}
+		} else {
+			// Reset backoff on success
+			backoff = l.stepDelay
 		}
 	}
 }

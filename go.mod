@@ -1,4 +1,4 @@
-module github.com/chris/go_ralph
+module github.com/chr1sbest/wiggum
 
 go 1.23.1
 

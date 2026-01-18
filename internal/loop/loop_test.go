@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/chris/go_ralph/internal/config"
-	"github.com/chris/go_ralph/internal/logger"
+	"github.com/chr1sbest/wiggum/internal/config"
+	"github.com/chr1sbest/wiggum/internal/logger"
 )
 
 // testStep is a simple step for testing.

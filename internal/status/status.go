@@ -7,7 +7,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/chris/go_ralph/internal/agent"
+	"github.com/chr1sbest/wiggum/internal/agent"
 )
 
 // ANSI escape codes
@@ -94,7 +94,7 @@ func (s *Writer) Step(loopNum, stepNum, totalSteps int, stepName string) {
 
 // StepWithRetry displays step with retry information
 func (s *Writer) StepWithRetry(loopNum, stepNum, totalSteps int, stepName string, attempt, maxRetries int) {
-	prdStatus, _ := agent.LoadPRDStatus("prd.json")
+	prdStatus, _ := agent.LoadPRDStatus(".ralph/prd.json")
 	completed := 0
 	total := 0
 	current := "Working"

@@ -7,9 +7,10 @@ import (
 
 // Config represents a loop configuration loaded from JSON.
 type Config struct {
-	Name        string       `json:"name"`
-	Description string       `json:"description,omitempty"`
-	Steps       []StepConfig `json:"steps"`
+	Name            string       `json:"name"`
+	Description     string       `json:"description,omitempty"`
+	MaxLoopsPerTask int          `json:"max_loops_per_task,omitempty"` // Max iterations per task before marking failed (0 = no limit)
+	Steps           []StepConfig `json:"steps"`
 }
 
 // StepConfig defines a single step in the loop.

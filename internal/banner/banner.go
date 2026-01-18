@@ -3,11 +3,23 @@ package banner
 import (
 	"fmt"
 	"io"
+	"math/rand"
 	"os"
 	"strings"
+	"time"
 
-	"github.com/chris/go_ralph/internal/config"
+	"github.com/chr1sbest/wiggum/internal/config"
 )
+
+var quoteRand = rand.New(rand.NewSource(time.Now().UnixNano()))
+
+var ralphQuotes = []string{
+	"Me fail English? That's unpossible!",
+	"My cat's breath smells like cat food.",
+	"They taste like... burning.",
+	"I bent my Wookiee!",
+	"When I grow up, I want to be a principal or a caterpillar.",
+}
 
 // ANSI color codes
 const (
@@ -42,6 +54,33 @@ type Banner struct {
 	width  int
 }
 
+const ralphASCII = `⠀⠀⠀⠀⠀⠀⣀⣤⣶⡶⢛⠟⡿⠻⢻⢿⢶⢦⣄⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⢀⣠⡾⡫⢊⠌⡐⢡⠊⢰⠁⡎⠘⡄⢢⠙⡛⡷⢤⡀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⢠⢪⢋⡞⢠⠃⡜⠀⠎⠀⠉⠀⠃⠀⠃⠀⠃⠙⠘⠊⢻⠦⠀⠀⠀⠀⠀⠀
+⠀⠀⢇⡇⡜⠀⠜⠀⠁⠀⢀⠔⠉⠉⠑⠄⠀⠀⡰⠊⠉⠑⡄⡇⠀⠀⠀⠀⠀⠀
+⠀⠀⡸⠧⠄⠀⠀⠀⠀⠀⠘⡀⠾⠀⠀⣸⠀⠀⢧⠀⠛⠀⠌⡇⠀⠀⠀⠀⠀⠀
+⠀⠘⡇⠀⠀⠀⠀⠀⠀⠀⠀⠙⠒⠒⠚⠁⠈⠉⠲⡍⠒⠈⠀⡇⠀⠀⠀⠀⠀⠀
+⠀⠀⠈⠲⣆⠀⠀⠀⠀⠀⠀⠀⠀⣠⠖⠉⡹⠤⠶⠁⠀⠀⠀⠈⢦⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠈⣦⡀⠀⠀⠀⠀⠧⣴⠁⠀⠘⠓⢲⣄⣀⣀⣀⡤⠔⠃⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⣜⠀⠈⠓⠦⢄⣀⣀⣸⠀⠀⠀⠀⠁⢈⢇⣼⡁⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⢠⠒⠛⠲⣄⠀⠀⠀⣠⠏⠀⠉⠲⣤⠀⢸⠋⢻⣤⡛⣄⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⢡⠀⠀⠀⠀⠉⢲⠾⠁⠀⠀⠀⠀⠈⢳⡾⣤⠟⠁⠹⣿⢆⠀⠀⠀⠀⠀⠀
+⠀⢀⠼⣆⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣼⠃⠀⠀⠀⠀⠀⠈⣧⠀⠀⠀⠀⠀
+⠀⡏⠀⠘⢦⡀⠀⠀⠀⠀⠀⠀⠀⠀⣠⠞⠁⠀⠀⠀⠀⠀⠀⠀⢸⣧⠀⠀⠀⠀
+⢰⣄⠀⠀⠀⠉⠳⠦⣤⣤⡤⠴⠖⠋⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢯⣆⠀⠀⠀
+⢸⣉⠉⠓⠲⢦⣤⣄⣀⣀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣀⣀⣀⣠⣼⢹⡄⠀⠀
+⠘⡍⠙⠒⠶⢤⣄⣈⣉⡉⠉⠙⠛⠛⠛⠛⠛⠛⢻⠉⠉⠉⢙⣏⣁⣸⠇⡇⠀⠀
+⠀⢣⠀⠀⠀⠀⠀⠀⠉⠉⠉⠙⠛⠛⠛⠛⠛⠛⠛⠒⠒⠒⠋⠉⠀⠸⠚⢇⠀⠀
+⠀⠀⢧⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢠⠇⢤⣨⠇⠀
+⠀⠀⠀⢧⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣤⢻⡀⣸⠀⠀⠀
+⠀⠀⠀⢸⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢹⠛⠉⠁⠀⠀⠀
+⠀⠀⠀⢸⠀⠀⠀⠀⠀⠀⠀⠀⢠⢄⣀⣤⠤⠴⠒⠀⠀⠀⠀⢸⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⢸⠀⠀⠀⠀⠀⠀⠀⠀⡇⠀⠀⢸⠀⠀⠀⠀⠀⠀⠀⠘⡆⠀⠀⠀⠀⠀
+⠀⠀⠀⡎⠀⠀⠀⠀⠀⠀⠀⠀⢷⠀⠀⢸⠀⠀⠀⠀⠀⠀⠀⠀⡇⠀⠀⠀⠀⠀
+⠀⠀⢀⡷⢤⣤⣀⣀⣀⣀⣠⠤⠾⣤⣀⡘⠛⠶⠶⠶⠶⠖⠒⠋⠙⠓⠲⢤⣀⠀
+⠀⠀⠘⠧⣀⡀⠈⠉⠉⠁⠀⠀⠀⠀⠈⠙⠳⣤⣄⣀⣀⣀⠀⠀⠀⠀⠀⢀⣈⡇
+⠀⠀⠀⠀⠀⠉⠛⠲⠤⠤⢤⣤⣄⣀⣀⣀⣀⡸⠇⠀⠀⠀⠉⠉⠉⠉⠉⠉⠁⠀`
+
 // New creates a new Banner that writes to stdout
 func New() *Banner {
 	return &Banner{
@@ -62,6 +101,7 @@ func NewWithWriter(w io.Writer) *Banner {
 func (b *Banner) Print(cfg *config.Config) {
 	_ = cfg
 	b.printHeader()
+	fmt.Fprintf(b.writer, "%s%s%s\n", cyan, ralphASCII, reset)
 	b.printFooter()
 }
 
@@ -75,7 +115,18 @@ func (b *Banner) printHeader() {
 	padding := b.width - visualLen(titleText) - 4
 	fmt.Fprintf(b.writer, "%s%s%s%s%s%s\n", dim, vertical, reset, title, strings.Repeat(" ", padding), dim+vertical+reset)
 
-	subtitleText := "Automation loop with Claude agent"
+	subtitleText := randomRalphQuote()
+	maxSubtitleLen := b.width - 4
+	if maxSubtitleLen < 0 {
+		maxSubtitleLen = 0
+	}
+	if visualLen(subtitleText) > maxSubtitleLen {
+		if maxSubtitleLen <= 3 {
+			subtitleText = subtitleText[:maxSubtitleLen]
+		} else {
+			subtitleText = subtitleText[:maxSubtitleLen-3] + "..."
+		}
+	}
 	sub := fmt.Sprintf("  %s%s%s", dim, subtitleText, reset)
 	subPadding := b.width - visualLen(subtitleText) - 4
 	if subPadding < 0 {
@@ -96,6 +147,13 @@ func (b *Banner) printFooter() {
 // visualLen returns the visual length of a string (excluding ANSI codes)
 func visualLen(s string) int {
 	return len(s)
+}
+
+func randomRalphQuote() string {
+	if len(ralphQuotes) == 0 {
+		return "Automation loop with Claude agent"
+	}
+	return ralphQuotes[quoteRand.Intn(len(ralphQuotes))]
 }
 
 func pluralize(n int) string {

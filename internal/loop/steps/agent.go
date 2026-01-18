@@ -5,14 +5,15 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
 
-	"github.com/chris/go_ralph/internal/agent"
-	"github.com/chris/go_ralph/internal/tracker"
+	"github.com/chr1sbest/wiggum/internal/agent"
+	"github.com/chr1sbest/wiggum/internal/tracker"
 )
 
 // ClaudeUsageError indicates Claude is unavailable due to quota/usage limits.
@@ -46,6 +47,8 @@ type AgentConfig struct {
 	PromptFile string `json:"prompt_file,omitempty"`
 	// PrdFile is the path to prd.json (default: "prd.json")
 	PrdFile string `json:"prd_file,omitempty"`
+	// Model is the Claude model to use (optional)
+	Model string `json:"model,omitempty"`
 	// MarkerFile is an optional file path. If it exists, the agent step is skipped.
 	// If set and the step runs successfully, the marker file will be created.
 	MarkerFile string `json:"marker_file,omitempty"`
@@ -72,6 +75,7 @@ func DefaultAgentConfig() AgentConfig {
 	return AgentConfig{
 		PromptFile:         "PROMPT.md",
 		PrdFile:            "prd.json",
+		Model:              "",
 		MarkerFile:         "",
 		AllowedTools:       "Write,Read,Edit,Glob,Grep,Bash,Task,TodoWrite,WebFetch,WebSearch",
 		Timeout:            "15m",
@@ -105,7 +109,9 @@ func (s *AgentStep) Type() string { return "agent" }
 // Execute runs the Claude Code agent
 func (s *AgentStep) Execute(ctx context.Context, rawConfig json.RawMessage) error {
 	start := time.Now()
-	_ = os.MkdirAll(".ralph", 0755)
+	if err := os.MkdirAll(".ralph", 0755); err != nil {
+		log.Printf("warning: failed to create .ralph directory: %v", err)
+	}
 	trackerWriter := tracker.NewWriter(".ralph")
 	writeTracking := func(status string, prdStatus *agent.PRDStatus, sessionState *agent.SessionState, currentStep string, err error) {
 		currentTask := "Working"
@@ -127,7 +133,7 @@ func (s *AgentStep) Execute(ctx context.Context, rawConfig json.RawMessage) erro
 		}
 
 		elapsed := int(time.Since(start).Seconds())
-		_ = trackerWriter.WriteStatus(tracker.Status{
+		if err := trackerWriter.WriteStatus(tracker.Status{
 			Timestamp:      time.Now(),
 			LoopCount:      loopCount,
 			CurrentTask:    currentTask,
@@ -137,9 +143,11 @@ func (s *AgentStep) Execute(ctx context.Context, rawConfig json.RawMessage) erro
 			ElapsedSeconds: elapsed,
 			SessionID:      sessionID,
 			CurrentStep:    currentStep,
-		})
+		}); err != nil {
+			log.Printf("warning: failed to write status: %v", err)
+		}
 
-		_ = trackerWriter.WriteProgress(tracker.Progress{
+		if err := trackerWriter.WriteProgress(tracker.Progress{
 			Status:         status,
 			Indicator:      "-",
 			ElapsedSeconds: elapsed,
@@ -147,7 +155,9 @@ func (s *AgentStep) Execute(ctx context.Context, rawConfig json.RawMessage) erro
 			CompletedCount: completed,
 			PendingCount:   pending,
 			Timestamp:      time.Now().Format("2006-01-02 15:04:05"),
-		})
+		}); err != nil {
+			log.Printf("warning: failed to write progress: %v", err)
+		}
 	}
 
 	// Parse config with defaults
@@ -307,6 +317,11 @@ func (s *AgentStep) buildLoopContext(cfg AgentConfig, prdStatus *agent.PRDStatus
 func (s *AgentStep) executeClaudeCode(ctx context.Context, cfg AgentConfig, prompt, loopContext string) (string, error) {
 	args := []string{}
 
+	// Model
+	if strings.TrimSpace(cfg.Model) != "" {
+		args = append(args, "--model", strings.TrimSpace(cfg.Model))
+	}
+
 	// Output format
 	if cfg.OutputFormat == "json" {
 		args = append(args, "--output-format", "json")
@@ -383,14 +398,19 @@ func (s *AgentStep) saveOutput(logDir, output string, loopCount int) {
 	}
 
 	// Ensure log directory exists
-	os.MkdirAll(logDir, 0755)
+	if err := os.MkdirAll(logDir, 0755); err != nil {
+		log.Printf("warning: failed to create log directory %s: %v", logDir, err)
+		return
+	}
 
 	// Create timestamped filename
 	timestamp := time.Now().Format("2006-01-02_15-04-05")
 	filename := fmt.Sprintf("claude_output_%s_loop%d.log", timestamp, loopCount)
 	path := filepath.Join(logDir, filename)
 
-	os.WriteFile(path, []byte(output), 0644)
+	if err := os.WriteFile(path, []byte(output), 0644); err != nil {
+		log.Printf("warning: failed to write claude output log %s: %v", path, err)
+	}
 }
 
 // AgentExitError indicates the agent has determined work is complete

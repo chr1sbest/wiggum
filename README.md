@@ -1,6 +1,6 @@
 # wiggum
 
-<p align="center">
+<p align="left">
   <img src="assets/ralph.png" alt="ralph" width="250" />
 </p>
 
@@ -9,8 +9,13 @@ Ralph Loop (`while :; do cat PROMPT.md | claude-code ; done`) with some bells an
 ## Install
 
 ```bash
-go install github.com/chris/go_ralph/cmd/ralph@v1.0.0
+go install github.com/chr1sbest/wiggum/cmd/ralph@v1.0.6
 ```
+
+## Requirements
+
+- Claude Code must be installed and available on your `PATH` as `claude`.
+- Ralph invokes Claude Code with tool access enabled (unsafe mode). Claude can write files and run commands in your project.
 
 ## Usage
 
@@ -18,11 +23,14 @@ Write requirements in an .md file (see /examples) then have Ralph get to work.
 
 ```bash
 # Create a new project using pre-defined requirements
-ralph new-project myproject requirements.md
+ralph init myproject requirements.md
 
 # Run the Ralph loop
 cd myproject
 ralph run
+
+# Upgrade Ralph
+ralph upgrade
 ```
 
 ### Examples
@@ -30,26 +38,26 @@ ralph run
 - `examples/flask_requirements.md` - minimal Flask example requirements file
 
 ```bash
-ralph new-project flasky examples/flask_requirements.md .
+ralph init flasky examples/flask_requirements.md
 ```
 
 ### Add new work
 
-Use `new-work` to translate a work request into new tasks and append them to `prd.json`.
+Use `add` to translate a work request into new tasks and append them to `.ralph/prd.json`.
 
 ```bash
 cd myproject
 
 # Option A: from a markdown file
-ralph new-work ../work.md
+ralph add ../work.md
 
 # Option B: inline
-ralph new-work "Add an endpoint that returns the user's country based on IP"
+ralph add "Add an endpoint that returns the user's country based on IP"
 ```
 
-`new-work` will:
+`add` will:
 - call Claude to translate your request into tasks
-- update `prd.json`
+- update `.ralph/prd.json`
 - print the new tasks to stdout
 
 Next step:
@@ -60,27 +68,28 @@ ralph run
 
 ## Project Structure
 
-Projects created by `ralph new-project` include:
-- `prd.json` - Task tracking (source of truth)
-- `requirements.md` - Project requirements
-- `SETUP_PROMPT.md` - Setup prompt (initial scaffolding / planning)
-- `LOOP_PROMPT.md` - Worker loop prompt (iterative implementation)
-- `configs/default.json` - Loop configuration
-- `logs/` - Claude output logs
+Projects created by `ralph init` include:
+- `.ralph/prd.json` - Task tracking (source of truth)
+- `.ralph/requirements.md` - Project requirements
+- `.ralph/prompts/SETUP_PROMPT.md` - Setup prompt (initial scaffolding / planning)
+- `.ralph/prompts/LOOP_PROMPT.md` - Worker loop prompt (iterative implementation)
+- `.ralph/configs/default.json` - Loop configuration
+- `.ralph/logs/` - Claude output logs
+- `./<project>/<project>/.git` - Git repository for application code
 
 ## FAQ
 
-### Do I have to pass a requirements file to `new-project`?
+### Do I have to pass a requirements file to `init`?
 
-Yes. `new-project` requires a markdown requirements file:
+Yes. `init` requires a markdown requirements file:
 
 ```bash
-ralph new-project myproject requirements.md
+ralph init myproject requirements.md
 ```
 
 ### I ran `ralph run` and it says files are missing
 
-Run `ralph run` from the project root created by `ralph new-project` (the directory containing `prd.json`, `requirements.md`, and `configs/`).
+Run `ralph run` from the project root created by `ralph init` (the directory containing `.ralph/` and the nested application code directory).
 
 ### Ralph says the lock is held
 
@@ -98,7 +107,7 @@ rm -f .ralph/.ralph_lock
 
 ### Where do Claude logs go?
 
-Claude output logs are written to `logs/`.
+Claude output logs are written to `.ralph/logs/`.
 
 ### Claude usage limit / rate limit
 

@@ -1,5 +1,5 @@
 # Binaries
-ralph
+/ralph
 *.exe
 
 # Ralph runtime files
@@ -28,3 +28,6 @@ Thumbs.db
 
 # Go
 /vendor/
+
+# Examples
+flasky/
