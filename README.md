@@ -8,9 +8,20 @@ Ralph Loop (`while :; do cat PROMPT.md | claude-code ; done`) with some bells an
 
 ## Install
 
+### End users (recommended)
+
+Download a prebuilt `ralph` binary from GitHub Releases and put it on your `PATH`.
+
+- macOS / Linux: download `ralph_<os>_<arch>.tar.gz`, extract, move `ralph` to a directory on your `PATH`
+- Windows: download `ralph_windows_amd64.zip`, extract, add to your `PATH`
+
+### Developers
+
 ```bash
-go install github.com/chr1sbest/wiggum/cmd/ralph@v1.0.6
+go install github.com/chr1sbest/wiggum/cmd/ralph@latest
 ```
+
+If you build from source locally, `ralph version` may show `dev`. Official releases stamp the version at build time.
 
 ## Requirements
 

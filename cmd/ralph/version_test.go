@@ -61,6 +61,9 @@ func TestVersionConstant(t *testing.T) {
 	if version == "" {
 		t.Error("version constant should not be empty")
 	}
+	if version == "dev" {
+		return
+	}
 	parts := parseSemver(version)
 	if parts[0] == 0 && parts[1] == 0 && parts[2] == 0 {
 		t.Errorf("version %q should parse to valid semver", version)

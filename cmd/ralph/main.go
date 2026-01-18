@@ -15,7 +15,7 @@ func main() {
 		os.Exit(0)
 	}
 	if os.Args[1] == "--version" {
-		fmt.Printf("ralph version %s\n", version)
+		fmt.Println(versionLine())
 		os.Exit(0)
 	}
 
@@ -29,7 +29,7 @@ func main() {
 	case "upgrade":
 		os.Exit(upgradeCmd(os.Args[2:]))
 	case "version":
-		fmt.Printf("ralph version %s\n", version)
+		fmt.Println(versionLine())
 	case "help", "-h", "--help":
 		printUsage()
 	default:
