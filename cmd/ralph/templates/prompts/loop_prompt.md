@@ -75,5 +75,14 @@ After (in .ralph/prd.json):
 {"id": "T001", "title": "Create Flask app", "status": "done"}
 ```
 
+## Learnings
+After completing a task, if you discovered something important, append it to `.ralph/learnings.md`:
+- Gotchas or tricky issues you encountered
+- Patterns that worked well
+- Architectural decisions and why you made them
+- Project-specific context that would help future iterations
+
+Keep entries concise (1-3 lines each). This file persists across sessions.
+
 ## When All Tasks Are Done
 If all tasks have status "done", the project is complete. You can stop.

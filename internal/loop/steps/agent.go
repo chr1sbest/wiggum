@@ -298,19 +298,24 @@ func (s *AgentStep) buildLoopContext(cfg AgentConfig, prdStatus *agent.PRDStatus
 		}
 	}
 
+	// Include learnings from previous sessions
+	learningsPath := ".ralph/learnings.md"
+	if learnings, err := os.ReadFile(learningsPath); err == nil && len(learnings) > 0 {
+		content := strings.TrimSpace(string(learnings))
+		if len(content) > 2000 {
+			content = content[:2000] + "..."
+		}
+		if content != "" {
+			parts = append(parts, fmt.Sprintf("\n\nPrevious learnings:\n%s", content))
+		}
+	}
+
 	// Append custom context
 	if cfg.AppendSystemPrompt != "" {
 		parts = append(parts, cfg.AppendSystemPrompt)
 	}
 
-	context := strings.Join(parts, " ")
-
-	// Limit total length
-	if len(context) > 500 {
-		context = context[:500]
-	}
-
-	return context
+	return strings.Join(parts, " ")
 }
 
 // executeClaudeCode runs the claude CLI

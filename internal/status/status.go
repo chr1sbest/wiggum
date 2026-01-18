@@ -122,9 +122,17 @@ func (s *Writer) StepWithRetry(loopNum, stepNum, totalSteps int, stepName string
 
 // Complete shows completion status
 func (s *Writer) Complete(loopNum, totalSteps int) {
-	bar := progressBar(totalSteps, totalSteps)
+	prdStatus, _ := agent.LoadPRDStatus(".ralph/prd.json")
+	completed := totalSteps
+	total := totalSteps
+	if prdStatus != nil {
+		completed = prdStatus.CompletedTasks
+		total = prdStatus.TotalTasks
+	}
+
+	bar := progressBar(completed, total)
 	lines := []string{
-		fmt.Sprintf("%s %s%d/%d%s", bar, dim, totalSteps, totalSteps, reset),
+		fmt.Sprintf("%s %s%d/%d%s", bar, dim, completed, total, reset),
 		fmt.Sprintf("%s✓ Complete%s", green+bold, reset),
 	}
 

@@ -20,20 +20,23 @@ func newWorkCmd(args []string) {
 Usage:
   ralph add <file.md>
   ralph add "description..."
-  ralph add -file <file.md>
-  ralph add -desc "description..."
+  ralph add -file <file.md> [-model <model>]
+  ralph add -desc "description..." [-model <model>]
 
 Flags:
   -file   Path to markdown file with work description
   -desc   Work description
+  -model  Claude model to use (default: opus)
 
 Examples:
   ralph add ../work.md
   ralph add "Add an endpoint that returns the user's country based on IP"
+  ralph add -file ../work.md -model opus
 `)
 	}
 	description := fs.String("desc", "", "Work description")
 	filePath := fs.String("file", "", "Path to markdown file with work description")
+	model := fs.String("model", "opus", "Claude model to use")
 	if err := fs.Parse(args); err != nil {
 		if errors.Is(err, flag.ErrHelp) {
 			fs.Usage()
@@ -76,6 +79,15 @@ Examples:
 		os.Exit(1)
 	}
 
+	chosenModel := strings.TrimSpace(*model)
+	if chosenModel == "" {
+		chosenModel = "opus"
+	}
+
+	// Archive completed tasks and compact learnings before adding new work
+	archiveCompletedTasks()
+	compactLearnings(chosenModel)
+
 	prdPath := filepath.Join(".ralph", "prd.json")
 	prdBytes, err := os.ReadFile(prdPath)
 	if err != nil {
@@ -95,8 +107,8 @@ Examples:
 		os.Exit(1)
 	}
 
-	fmt.Println("Calling Claude to translate into tasks...")
-	result, err := runClaudeOnce(prompt)
+	fmt.Printf("Calling Claude to translate into tasks (model: %s)...\n", chosenModel)
+	result, err := runClaudeOnceWithModel(prompt, chosenModel)
 	if err != nil {
 		if isClaudeRateLimitError(err) {
 			fmt.Fprintln(os.Stderr, "Claude is unavailable (usage limit / rate limit).")

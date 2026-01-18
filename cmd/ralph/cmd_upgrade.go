@@ -73,6 +73,12 @@ func upgradeCmd(args []string) int {
 	}
 	exeDir := filepath.Dir(exePath)
 
+	if looksLikeHomebrewInstall(exePath) {
+		fmt.Println("This ralph install looks like it was installed via Homebrew.")
+		printBrewUpgradeInstructions()
+		return 0
+	}
+
 	if !looksLikeGoInstall(exeDir) {
 		fmt.Println("This ralph install does not look like it was installed via `go install`.")
 		printManualUpgradeInstructions()
@@ -219,6 +225,28 @@ func fetchLatestVersionFromGo() (string, error) {
 func printManualUpgradeInstructions() {
 	fmt.Println("To upgrade manually, run:")
 	fmt.Println("  go install github.com/chr1sbest/wiggum/cmd/ralph@latest")
+}
+
+func printBrewUpgradeInstructions() {
+	fmt.Println("To upgrade via Homebrew, run:")
+	fmt.Println("  brew update")
+	fmt.Println("  brew upgrade ralph")
+}
+
+func looksLikeHomebrewInstall(exePath string) bool {
+	p := filepath.Clean(exePath)
+	if rp, err := filepath.EvalSymlinks(p); err == nil {
+		p = rp
+	}
+	// Homebrew installs versioned packages under the Cellar.
+	if strings.Contains(p, string(filepath.Separator)+"Cellar"+string(filepath.Separator)) {
+		return true
+	}
+	// Heuristic: some setups might not include Cellar in the resolved path.
+	if strings.Contains(p, string(filepath.Separator)+"Homebrew"+string(filepath.Separator)) {
+		return true
+	}
+	return false
 }
 
 func looksLikeGoInstall(exeDir string) bool {
