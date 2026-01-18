@@ -1,6 +1,7 @@
 package banner
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"math/rand"
@@ -50,8 +51,9 @@ const (
 
 // Banner handles pretty startup output
 type Banner struct {
-	writer io.Writer
-	width  int
+	writer    io.Writer
+	width     int
+	startedAt time.Time
 }
 
 const ralphASCII = `⠀⠀⠀⠀⠀⠀⣀⣤⣶⡶⢛⠟⡿⠻⢻⢿⢶⢦⣄⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
@@ -84,28 +86,29 @@ const ralphASCII = `⠀⠀⠀⠀⠀⠀⣀⣤⣶⡶⢛⠟⡿⠻⢻⢿⢶⢦⣄⡀
 // New creates a new Banner that writes to stdout
 func New() *Banner {
 	return &Banner{
-		writer: os.Stdout,
-		width:  60,
+		writer:    os.Stdout,
+		width:     60,
+		startedAt: time.Now(),
 	}
 }
 
 // NewWithWriter creates a Banner with a custom writer (for testing)
 func NewWithWriter(w io.Writer) *Banner {
 	return &Banner{
-		writer: w,
-		width:  60,
+		writer:    w,
+		width:     60,
+		startedAt: time.Now(),
 	}
 }
 
 // Print displays the startup banner with config information
 func (b *Banner) Print(cfg *config.Config) {
-	_ = cfg
-	b.printHeader()
-	fmt.Fprintf(b.writer, "%s%s%s\n", cyan, ralphASCII, reset)
+	b.printHeader(cfg)
 	b.printFooter()
+	fmt.Fprintf(b.writer, "%s%s%s\n\n", cyan, ralphASCII, reset)
 }
 
-func (b *Banner) printHeader() {
+func (b *Banner) printHeader(cfg *config.Config) {
 	// Top border
 	fmt.Fprintf(b.writer, "\n%s%s%s%s%s\n", dim, topLeft, strings.Repeat(horizontal, b.width-2), topRight, reset)
 
@@ -136,6 +139,29 @@ func (b *Banner) printHeader() {
 
 	// Separator
 	fmt.Fprintf(b.writer, "%s%s%s%s%s\n", dim, vertical, strings.Repeat(horizontal, b.width-2), vertical, reset)
+
+	model := strings.TrimSpace(findClaudeModelFromConfig(cfg))
+	if model == "" {
+		model = "sonnet"
+	}
+	modelText := fmt.Sprintf("model: %s | started at %s", model, b.startedAt.Local().Format("15:04"))
+	maxModelLen := b.width - 4
+	if maxModelLen < 0 {
+		maxModelLen = 0
+	}
+	if visualLen(modelText) > maxModelLen {
+		if maxModelLen <= 3 {
+			modelText = modelText[:maxModelLen]
+		} else {
+			modelText = modelText[:maxModelLen-3] + "..."
+		}
+	}
+	modelLine := fmt.Sprintf("  %s%s%s", dim, modelText, reset)
+	modelPadding := b.width - visualLen(modelText) - 4
+	if modelPadding < 0 {
+		modelPadding = 0
+	}
+	fmt.Fprintf(b.writer, "%s%s%s%s%s%s\n", dim, vertical, reset, modelLine, strings.Repeat(" ", modelPadding), dim+vertical+reset)
 }
 
 func (b *Banner) printFooter() {
@@ -154,6 +180,33 @@ func randomRalphQuote() string {
 		return "Automation loop with Claude agent"
 	}
 	return ralphQuotes[quoteRand.Intn(len(ralphQuotes))]
+}
+
+func findClaudeModelFromConfig(cfg *config.Config) string {
+	if cfg == nil {
+		return ""
+	}
+	for _, s := range cfg.Steps {
+		if s.Type != "agent" {
+			continue
+		}
+		if len(s.Config) == 0 {
+			continue
+		}
+		var m map[string]any
+		if err := json.Unmarshal(s.Config, &m); err != nil {
+			continue
+		}
+		if v, ok := m["model"]; ok {
+			if ms, ok := v.(string); ok {
+				ms = strings.TrimSpace(ms)
+				if ms != "" {
+					return ms
+				}
+			}
+		}
+	}
+	return ""
 }
 
 func pluralize(n int) string {
