@@ -75,7 +75,7 @@ func DefaultAgentConfig() AgentConfig {
 	return AgentConfig{
 		PromptFile:         "PROMPT.md",
 		PrdFile:            "prd.json",
-		Model:              "",
+		Model:              "sonnet",
 		MarkerFile:         "",
 		AllowedTools:       "Write,Read,Edit,Glob,Grep,Bash,Task,TodoWrite,WebFetch,WebSearch",
 		Timeout:            "15m",

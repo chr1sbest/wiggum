@@ -8,10 +8,18 @@ import (
 )
 
 func runClaudeOnce(prompt string) (string, error) {
+	return runClaudeOnceWithModel(prompt, "")
+}
+
+func runClaudeOnceWithModel(prompt string, model string) (string, error) {
 	if _, err := exec.LookPath("claude"); err != nil {
 		return "", fmt.Errorf("claude not found in PATH")
 	}
-	args := []string{"--dangerously-skip-permissions", "-p", prompt}
+	args := []string{"--dangerously-skip-permissions"}
+	if strings.TrimSpace(model) != "" {
+		args = append(args, "--model", strings.TrimSpace(model))
+	}
+	args = append(args, "-p", prompt)
 	cmd := exec.Command("claude", args...)
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout

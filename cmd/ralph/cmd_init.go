@@ -18,19 +18,21 @@ func newProjectCmd(args []string) {
 
 Usage:
   ralph init <name> <requirements.md>
-  ralph init -name <name> -requirements <file>
+  ralph init -name <name> -requirements <file> [-model <model>]
 
 Flags:
   -name           Project name
   -requirements   Path to requirements.md file (required)
+  -model          Claude model to use (default: opus)
 
 Examples:
   ralph init myproject requirements.md
-  ralph init -name myproject -requirements requirements.md
+  ralph init -name myproject -requirements requirements.md -model opus
 `)
 	}
 	name := fs.String("name", "", "Project name")
 	reqFile := fs.String("requirements", "", "Path to requirements.md file (required)")
+	model := fs.String("model", "", "Claude model to use")
 	if err := fs.Parse(args); err != nil {
 		if errors.Is(err, flag.ErrHelp) {
 			fs.Usage()
@@ -85,7 +87,13 @@ Examples:
 		os.Exit(1)
 	}
 
-	fmt.Println("Analyzing requirements with Claude...")
+	configModel := strings.TrimSpace(*model)
+	analysisModel := configModel
+	if analysisModel == "" {
+		analysisModel = "opus"
+	}
+
+	fmt.Printf("Analyzing requirements with Claude (model: %s)...\n", analysisModel)
 
 	prompt, err := renderNewProjectPrompt(*name, string(reqContent))
 	if err != nil {
@@ -93,7 +101,7 @@ Examples:
 		os.Exit(1)
 	}
 
-	result, err := runClaudeOnce(prompt)
+	result, err := runClaudeOnceWithModel(prompt, analysisModel)
 	if err != nil {
 		if isClaudeRateLimitError(err) {
 			fmt.Fprintln(os.Stderr, "Claude is unavailable (usage limit / rate limit).")
@@ -150,6 +158,7 @@ Examples:
 		LogDir:            ".ralph/logs",
 		PrdFile:           ".ralph/prd.json",
 		CommitMessageFile: "../.ralph/commit_message.txt",
+		Model:             configModel,
 	})
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to render default config: %v\n", err)

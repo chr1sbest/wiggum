@@ -14,6 +14,7 @@ type defaultConfigTemplateData struct {
 	LogDir            string
 	PrdFile           string
 	CommitMessageFile string
+	Model             string
 }
 
 type DefaultLoopConfigOptions struct {
@@ -24,6 +25,7 @@ type DefaultLoopConfigOptions struct {
 	LogDir            string
 	PrdFile           string
 	CommitMessageFile string
+	Model             string
 }
 
 const defaultLoopConfigTemplate = `{
@@ -37,6 +39,9 @@ const defaultLoopConfigTemplate = `{
       "config": {
         "prompt_file": "{{.SetupPromptFile}}",
         "prd_file": "{{.PrdFile}}",
+{{- if .Model }}
+        "model": "{{.Model}}",
+{{- end }}
         "session_file": ".ralph/.ralph_session",
         "marker_file": "{{.MarkerFile}}",
         "allowed_tools": "Write,Read,Edit,Glob,Grep,Bash,Task,TodoWrite,WebFetch,WebSearch",
@@ -53,6 +58,9 @@ const defaultLoopConfigTemplate = `{
       "config": {
         "prompt_file": "{{.LoopPromptFile}}",
         "prd_file": "{{.PrdFile}}",
+{{- if .Model }}
+        "model": "{{.Model}}",
+{{- end }}
         "session_file": ".ralph/.ralph_session",
         "allowed_tools": "Write,Read,Edit,Glob,Grep,Bash,Task,TodoWrite,WebFetch,WebSearch",
         "timeout": "15m",
@@ -109,6 +117,7 @@ func renderDefaultLoopConfig(opts DefaultLoopConfigOptions) (string, error) {
 		LogDir:            opts.LogDir,
 		PrdFile:           opts.PrdFile,
 		CommitMessageFile: opts.CommitMessageFile,
+		Model:             opts.Model,
 	}
 
 	tmpl, err := template.New("default_config").Option("missingkey=error").Parse(defaultLoopConfigTemplate)
