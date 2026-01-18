@@ -1,10 +1,10 @@
-# ralph
+# wiggum
 
 <p align="center">
-  <img src="assets/ralph.png" alt="ralph" width="320" />
+  <img src="assets/ralph.png" alt="ralph" width="250" />
 </p>
 
-Modular automation loop for Claude Code.
+Ralph Loop (`while :; do cat PROMPT.md | claude-code ; done`) with some bells and whistles.
 
 ## Install
 
@@ -12,26 +12,17 @@ Modular automation loop for Claude Code.
 go install github.com/chris/go_ralph/cmd/ralph@v1.0.0
 ```
 
-Make sure your Go bin directory is on `PATH` (commonly `$HOME/go/bin`, or `$(go env GOBIN)` if set).
-
-Local development (from this repo):
-
-```bash
-go install ./cmd/ralph
-```
-
 ## Usage
 
+Write requirements in an .md file (see /examples) then have Ralph get to work.
+
 ```bash
-# Create a new project
+# Create a new project using pre-defined requirements
 ralph new-project myproject requirements.md
 
-# Run the loop
+# Run the Ralph loop
 cd myproject
 ralph run
-
-# Run once (single iteration)
-ralph run --once
 ```
 
 ### Examples
