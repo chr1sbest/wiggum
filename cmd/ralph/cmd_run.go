@@ -259,7 +259,7 @@ func validateRunPreflight(configFile string) error {
 
 func validateClaudePreflight() error {
 	if _, err := exec.LookPath("claude"); err != nil {
-		return fmt.Errorf("Claude Code is required but was not found in PATH.\n\nFix:\n  - Install Claude Code: https://docs.anthropic.com/en/docs/claude-code\n  - Ensure the `claude` binary is on your PATH\n  - Confirm it works: claude --help")
+		return fmt.Errorf("Claude Code is required but was not found in PATH.\n\nFix:\n  - Install Claude Code: https://code.claude.com/docs/en/setup\n  - Quick install: curl -fsSL https://claude.ai/install.sh | bash\n  - Ensure the `claude` binary is on your PATH\n  - Confirm it works: claude --help")
 	}
 
 	// Ensure the CLI is runnable (and not immediately failing due to a broken install).

@@ -29,7 +29,10 @@ brew install ralph
 
 ### Requirements
 
-- Claude Code must be installed and available on your `PATH` as `claude`.
+- **Claude Code CLI** must be installed and available on your `PATH` as `claude`.
+  - Install: https://code.claude.com/docs/en/setup
+  - Quick install: `curl -fsSL https://claude.ai/install.sh | bash`
+  - Verify: `claude --help`
 - Ralph invokes Claude Code with **tool access enabled** (unsafe mode).
 
 ## Usage
