@@ -30,7 +30,7 @@
       "title": "Add SECURITY.md",
       "details": "Create SECURITY.md with: supported versions (latest minor only), reporting instructions (GitHub security advisories or maintainer email), and expected response window (e.g., 48-72 hours acknowledgment).",
       "priority": "high",
-      "status": "todo",
+      "status": "done",
       "tests": "SECURITY.md exists and GitHub no longer shows 'No security policy detected' warning"
     },
     {
