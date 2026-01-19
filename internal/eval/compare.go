@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"math"
 	"path/filepath"
-	"strings"
 )
 
 // Compare compares evaluation results between ralph and oneshot approaches
@@ -63,36 +62,6 @@ func printComparison(ralph, oneshot *EvalResult, ralphFile, oneshotFile string) 
 	fmt.Printf("│           Cost │ %11s │ %11s │ %18s │\n", fmt.Sprintf("$%.2f", ralph.CostUSD), fmt.Sprintf("$%.2f", oneshot.CostUSD), costWinner)
 	fmt.Printf("│   Shared Tests │ %11s │ %11s │ %18s │\n", fmt.Sprintf("%d/%d", ralph.SharedTestsPassed, ralph.SharedTestsTotal), fmt.Sprintf("%d/%d", oneshot.SharedTestsPassed, oneshot.SharedTestsTotal), testsWinner)
 	fmt.Println("└────────────────┴─────────────┴─────────────┴────────────────────┘")
-	fmt.Println()
-
-	// Calculate overall winner
-	ralphWins := 0
-	oneshotWins := 0
-	ties := 0
-
-	winners := []string{durationWinner, tokensWinner, costWinner, testsWinner}
-	for _, winner := range winners {
-		if strings.HasPrefix(winner, "Ralph") {
-			ralphWins++
-		} else if strings.HasPrefix(winner, "Oneshot") {
-			oneshotWins++
-		} else if winner == "Tie" {
-			ties++
-		}
-	}
-
-	fmt.Println("═══════════════════════════════════════════════════════════════════════════════════════")
-	if ralphWins > oneshotWins {
-		fmt.Printf("🏆 OVERALL WINNER: Ralph (%d metrics vs %d)\n", ralphWins, oneshotWins)
-	} else if oneshotWins > ralphWins {
-		fmt.Printf("🏆 OVERALL WINNER: Oneshot (%d metrics vs %d)\n", oneshotWins, ralphWins)
-	} else {
-		fmt.Printf("🤝 TIE: Both approaches won %d metrics each\n", ralphWins)
-	}
-	if ties > 0 {
-		fmt.Printf("   (%d metric(s) tied)\n", ties)
-	}
-	fmt.Println("═══════════════════════════════════════════════════════════════════════════════════════")
 	fmt.Println()
 }
 

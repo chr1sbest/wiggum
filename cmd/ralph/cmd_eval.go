@@ -133,6 +133,7 @@ func evalRunCmd(args []string) int {
 	fs.SetOutput(io.Discard)
 	approach := fs.String("approach", "ralph", "Evaluation approach (ralph or oneshot)")
 	model := fs.String("model", "sonnet", "Claude model to use")
+	testOnly := fs.String("test-only", "", "Run tests only against existing project directory")
 
 	fs.Usage = func() {
 		fmt.Print(`eval run 🏃  Run an evaluation suite
@@ -143,10 +144,12 @@ Usage:
 Flags:
   --approach string    Evaluation approach: ralph or oneshot (default "ralph")
   --model string       Claude model to use (default "sonnet")
+  --test-only string   Run tests only against existing project directory
 
 Examples:
   ralph eval run flask --approach ralph
   ralph eval run logagg --approach oneshot --model opus
+  ralph eval run flask --test-only /path/to/existing/project
 `)
 	}
 
@@ -161,7 +164,8 @@ Examples:
 			if i+1 < len(args) && len(args[i+1]) > 0 && args[i+1][0] != '-' {
 				// Check if it's a known flag that takes a value
 				if args[i] == "-approach" || args[i] == "--approach" ||
-					args[i] == "-model" || args[i] == "--model" {
+					args[i] == "-model" || args[i] == "--model" ||
+					args[i] == "-test-only" || args[i] == "--test-only" {
 					i++
 					reordered = append(reordered, args[i])
 				}
@@ -195,6 +199,25 @@ Examples:
 	if _, err := os.Stat(suiteYaml); os.IsNotExist(err) {
 		fmt.Fprintf(os.Stderr, "Suite '%s' not found. Run 'ralph eval list' to see available suites.\n", suite)
 		return 1
+	}
+
+	// Handle test-only mode
+	if *testOnly != "" {
+		// Just run tests against existing project
+		suiteConfig, err := eval.LoadSuite(suite)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Failed to load suite: %v\n", err)
+			return 1
+		}
+
+		result, err := eval.RunSharedTests(*testOnly, suiteConfig, 8000)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Test execution failed: %v\n", err)
+			return 1
+		}
+
+		fmt.Printf("\nTests: %d/%d passed\n", result.Passed, result.Total)
+		return 0
 	}
 
 	// Validate approach
