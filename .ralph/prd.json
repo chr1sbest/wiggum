@@ -102,7 +102,7 @@
       "title": "Create tasktracker CRUD tests",
       "details": "Create evals/suites/tasktracker/tests/test_tasks.py with 8-10 tests covering: create task, list tasks, get task by id, update task, delete task, filter by status, task belongs to user, invalid task id handling. Tests should be implementation-agnostic.",
       "priority": "medium",
-      "status": "todo",
+      "status": "done",
       "tests": "test_tasks.py contains at least 8 test functions covering CRUD operations on tasks endpoint"
     },
     {
