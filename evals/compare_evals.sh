@@ -1,5 +1,11 @@
 #!/bin/bash
 
+# ============================================================================
+# DEPRECATED: This shell script is superseded by the Go implementation
+# Use 'ralph eval compare' command instead (see internal/eval/compare.go)
+# This script is kept for backwards compatibility and fallback purposes only
+# ============================================================================
+
 # Compare eval results from the unified eval framework
 # Usage: ./compare_evals.sh <suite> [model]
 #    or: ./compare_evals.sh [ralph_result.json] [oneshot_result.json]

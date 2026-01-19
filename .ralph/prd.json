@@ -94,7 +94,7 @@
       "title": "Deprecate shell scripts with notice",
       "details": "Add deprecation notices to evals/run.sh, evals/compare_evals.sh, and evals/run_shared_tests.sh as comments at the top indicating they are superseded by the Go implementation. Do not delete the scripts yet to allow fallback if needed.",
       "priority": "low",
-      "status": "todo",
+      "status": "done",
       "tests": "Shell scripts have deprecation comment; Go implementation is used by default"
     }
   ]

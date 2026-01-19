@@ -1,5 +1,11 @@
 #!/bin/bash
 
+# ============================================================================
+# DEPRECATED: This shell script is superseded by the Go implementation
+# Use 'ralph eval run' command instead (see cmd/ralph/cmd_eval.go)
+# This script is kept for backwards compatibility and fallback purposes only
+# ============================================================================
+
 # Unified Eval Runner
 # Usage: ./run.sh <suite> <approach> [model]
 #

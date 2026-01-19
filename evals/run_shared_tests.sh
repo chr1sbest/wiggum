@@ -1,5 +1,11 @@
 #!/bin/bash
 
+# ============================================================================
+# DEPRECATED: This shell script is superseded by the Go implementation
+# Use the Go test runner (internal/eval/testrunner.go) via 'ralph eval run'
+# This script is kept for backwards compatibility and fallback purposes only
+# ============================================================================
+
 # Run shared e2e tests against a project
 # Usage: ./run_shared_tests.sh <project_dir> <suite>
 #
