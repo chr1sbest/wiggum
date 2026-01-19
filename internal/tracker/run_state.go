@@ -11,6 +11,8 @@ type RunState struct {
 	CurrentStep        string    `json:"current_step,omitempty"`
 	StepStartedAt      time.Time `json:"step_started_at,omitempty"`
 	LastSuccessfulStep string    `json:"last_successful_step,omitempty"`
+	CurrentTaskID      string    `json:"current_task_id,omitempty"`
+	CurrentTask        string    `json:"current_task,omitempty"`
 	Status             string    `json:"status"`
 	LastError          string    `json:"last_error,omitempty"`
 }

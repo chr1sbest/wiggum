@@ -110,6 +110,14 @@ func (l *Loop) writeRunState(status string, currentStep string, stepStartedAt ti
 		rs.LastError = lastErr.Error()
 	}
 
+	// Add current task info from prd.json
+	if l.prdPath != "" {
+		if prdStatus, _ := agent.LoadPRDStatus(l.prdPath); prdStatus != nil {
+			rs.CurrentTaskID = prdStatus.CurrentTaskID
+			rs.CurrentTask = prdStatus.CurrentTask
+		}
+	}
+
 	_ = l.trackerWriter.WriteRunState(rs)
 }
 

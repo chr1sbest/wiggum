@@ -28,6 +28,8 @@ func main() {
 		newWorkCmd(os.Args[2:])
 	case "fix":
 		fixCmd(os.Args[2:])
+	case "pr":
+		os.Exit(prCmd(os.Args[2:]))
 	case "upgrade":
 		os.Exit(upgradeCmd(os.Args[2:]))
 	case "version":
@@ -55,6 +57,7 @@ Commands:
   init         Start a new Ralph project (fresh crayons!)
   add          Add more work for Ralph to think about
   fix          Create tasks from a GitHub issue
+  pr           Push branch and open a pull request
   upgrade      Check for updates and upgrade Ralph
   version      Show Ralph's version number
   help         Show this message again (I like explaining)

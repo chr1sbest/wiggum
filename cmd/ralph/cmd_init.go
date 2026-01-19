@@ -169,14 +169,22 @@ Examples:
 	}
 
 	// Initialize git if no .git exists (new project)
+	newGitRepo := false
 	if _, err := os.Stat(".git"); os.IsNotExist(err) {
 		if err := runGitInit(); err != nil {
 			fmt.Fprintf(os.Stderr, "Warning: failed to initialize git: %v\n", err)
+		} else {
+			newGitRepo = true
 		}
 	}
 
 	// Add .ralph/ to .gitignore BEFORE creating files (so git never tracks them)
 	appendToGitignore(".ralph/")
+
+	// Create initial commit with .gitignore for new repos
+	if newGitRepo {
+		createInitialCommit()
+	}
 
 	configContent, err := renderDefaultLoopConfig(DefaultLoopConfigOptions{
 		RepoDir:           ".",
@@ -284,6 +292,16 @@ func runGitInit() error {
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	return cmd.Run()
+}
+
+// createInitialCommit creates an initial commit with .gitignore if it exists
+func createInitialCommit() {
+	if _, err := os.Stat(".gitignore"); err == nil {
+		addCmd := exec.Command("git", "add", ".gitignore")
+		addCmd.Run()
+		commitCmd := exec.Command("git", "commit", "-m", "Initial commit")
+		commitCmd.Run()
+	}
 }
 
 // appendToGitignore adds an entry to .gitignore if not already present
