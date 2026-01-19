@@ -339,7 +339,7 @@ func writeResultJSON(trk *tracker.Writer, cfg *config.Config, modelOverride stri
 	if err != nil {
 		return err
 	}
-	return writeFileAtomic(".ralph/result.json", data, 0644)
+	return writeFileAtomic(".ralph/aggregate.json", data, 0644)
 }
 
 func findClaudeModelFromConfig(cfg *config.Config) string {

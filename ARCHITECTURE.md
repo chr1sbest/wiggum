@@ -75,9 +75,8 @@ Persists run state and metrics:
 
 ```
 .ralph/
-  ├── run_state.json      # Current run ID, loop count
-  ├── run_metrics.json    # Tokens, cost, timing
-  ├── progress.json       # Status for UI
+  ├── run_state.json      # Current run ID, loop count, status
+  ├── aggregate.json      # Final output with version, model, metrics
   └── .ralph_lock         # Prevents concurrent runs
 ```
 
@@ -123,7 +122,7 @@ Reads task completion from `.ralph/prd.json`.
       - If agent exits (all done / stuck), break
    b. Repeat until exit condition
 5. Print metrics (tokens, cost, time)
-6. Write result.json
+6. Write aggregate.json
 7. Release lock
 ```
 
@@ -245,15 +244,13 @@ myproject/                    # Created by ralph init
 │   ├── configs/
 │   │   └── default.json
 │   ├── logs/                # Claude output logs
-│   ├── run_state.json
-│   ├── run_metrics.json
-│   ├── progress.json
+│   ├── run_state.json       # Run ID, loop count, status
+│   ├── aggregate.json       # Final metrics (version, model, tokens, cost)
 │   └── .ralph_lock
 ├── myproject/               # Application code (nested)
 │   ├── .git/
 │   ├── app.py
 │   └── ...
-└── result.json              # Final metrics (after run)
 ```
 
 ## Model Defaults

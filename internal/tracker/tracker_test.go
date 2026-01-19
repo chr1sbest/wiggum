@@ -12,40 +12,23 @@ func TestWriterWritesValidJSON(t *testing.T) {
 	dir := t.TempDir()
 	w := NewWriter(dir)
 
-	s := Status{
-		Timestamp:      time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC),
-		LoopCount:      1,
-		CurrentTask:    "Working",
-		CompletedTasks: 0,
-		PendingTasks:   2,
-		Status:         "executing",
-		ElapsedSeconds: 3,
+	rs := RunState{
+		RunID:     "test-run-123",
+		PID:       12345,
+		StartedAt: time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC),
+		UpdatedAt: time.Date(2026, 1, 1, 0, 0, 3, 0, time.UTC),
+		Status:    "running",
 	}
-	if err := w.WriteStatus(s); err != nil {
-		t.Fatalf("WriteStatus error: %v", err)
+	if err := w.WriteRunState(rs); err != nil {
+		t.Fatalf("WriteRunState error: %v", err)
 	}
 
-	p := Progress{
-		Status:         "executing",
-		Indicator:      "-",
-		ElapsedSeconds: 3,
-		CurrentTask:    "Working",
-		CompletedCount: 0,
-		PendingCount:   2,
-		Timestamp:      "2026-01-01 00:00:03",
+	b, err := os.ReadFile(filepath.Join(dir, "run_state.json"))
+	if err != nil {
+		t.Fatalf("read run_state.json: %v", err)
 	}
-	if err := w.WriteProgress(p); err != nil {
-		t.Fatalf("WriteProgress error: %v", err)
-	}
-
-	for _, name := range []string{"status.json", "progress.json"} {
-		b, err := os.ReadFile(filepath.Join(dir, name))
-		if err != nil {
-			t.Fatalf("read %s: %v", name, err)
-		}
-		var v any
-		if err := json.Unmarshal(b, &v); err != nil {
-			t.Fatalf("%s invalid json: %v", name, err)
-		}
+	var v any
+	if err := json.Unmarshal(b, &v); err != nil {
+		t.Fatalf("run_state.json invalid json: %v", err)
 	}
 }

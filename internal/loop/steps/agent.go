@@ -108,57 +108,10 @@ func (s *AgentStep) Type() string { return "agent" }
 
 // Execute runs the Claude Code agent
 func (s *AgentStep) Execute(ctx context.Context, rawConfig json.RawMessage) error {
-	start := time.Now()
 	if err := os.MkdirAll(".ralph", 0755); err != nil {
 		log.Printf("warning: failed to create .ralph directory: %v", err)
 	}
 	trackerWriter := tracker.NewWriter(".ralph")
-	writeTracking := func(status string, prdStatus *agent.PRDStatus, sessionState *agent.SessionState, currentStep string, err error) {
-		currentTask := "Working"
-		completed := 0
-		pending := 0
-		if prdStatus != nil {
-			completed = prdStatus.CompletedTasks
-			pending = prdStatus.IncompleteTasks
-			if prdStatus.CurrentTask != "" {
-				currentTask = prdStatus.CurrentTask
-			}
-		}
-
-		loopCount := 0
-		sessionID := ""
-		if sessionState != nil {
-			loopCount = sessionState.LoopCount
-			sessionID = sessionState.SessionID
-		}
-
-		elapsed := int(time.Since(start).Seconds())
-		if err := trackerWriter.WriteStatus(tracker.Status{
-			Timestamp:      time.Now(),
-			LoopCount:      loopCount,
-			CurrentTask:    currentTask,
-			CompletedTasks: completed,
-			PendingTasks:   pending,
-			Status:         status,
-			ElapsedSeconds: elapsed,
-			SessionID:      sessionID,
-			CurrentStep:    currentStep,
-		}); err != nil {
-			log.Printf("warning: failed to write status: %v", err)
-		}
-
-		if err := trackerWriter.WriteProgress(tracker.Progress{
-			Status:         status,
-			Indicator:      "-",
-			ElapsedSeconds: elapsed,
-			CurrentTask:    currentTask,
-			CompletedCount: completed,
-			PendingCount:   pending,
-			Timestamp:      time.Now().Format("2006-01-02 15:04:05"),
-		}); err != nil {
-			log.Printf("warning: failed to write progress: %v", err)
-		}
-	}
 
 	// Parse config with defaults
 	cfg := DefaultAgentConfig()
@@ -199,28 +152,23 @@ func (s *AgentStep) Execute(ctx context.Context, rawConfig json.RawMessage) erro
 		return fmt.Errorf("failed to load prd status: %w", err)
 	}
 
-	writeTracking("executing", prdStatus, sessionState, "run-claude", nil)
-
 	// Check if we should exit before starting
 	completedBefore := 0
 	if prdStatus != nil {
 		completedBefore = prdStatus.CompletedTasks
 	}
 	if exitReason := s.exitDetector.Check(prdStatus != nil && prdStatus.IsComplete(), completedBefore); exitReason != agent.ExitReasonNone {
-		writeTracking("complete", prdStatus, sessionState, "run-claude", nil)
 		return &AgentExitError{Reason: exitReason}
 	}
 
 	// Exit early if no actionable tasks (all done or failed, none todo)
 	if prdStatus != nil && !prdStatus.HasActionableTasks() && prdStatus.TotalTasks > 0 {
-		writeTracking("complete", prdStatus, sessionState, "run-claude", nil)
 		return &AgentExitError{Reason: agent.ExitReasonNoActionableTasks}
 	}
 
 	// Read prompt file
 	promptContent, err := os.ReadFile(cfg.PromptFile)
 	if err != nil {
-		writeTracking("error", prdStatus, sessionState, "run-claude", err)
 		return fmt.Errorf("failed to read prompt file %s: %w", cfg.PromptFile, err)
 	}
 
@@ -242,7 +190,6 @@ func (s *AgentStep) Execute(ctx context.Context, rawConfig json.RawMessage) erro
 	if err != nil {
 		// Save output even on failure
 		s.saveOutput(cfg.LogDir, output, s.loopCount)
-		writeTracking("error", prdStatus, sessionState, "run-claude", err)
 		return fmt.Errorf("claude execution failed: %w", err)
 	}
 
@@ -279,11 +226,8 @@ func (s *AgentStep) Execute(ctx context.Context, rawConfig json.RawMessage) erro
 		completedAfter = prdStatusAfter.CompletedTasks
 	}
 	if exitReason := s.exitDetector.Check(planComplete, completedAfter); exitReason != agent.ExitReasonNone {
-		writeTracking("complete", prdStatusAfter, sessionState, "run-claude", nil)
 		return &AgentExitError{Reason: exitReason}
 	}
-
-	writeTracking("executing", prdStatusAfter, sessionState, "run-claude", nil)
 
 	return nil
 }
