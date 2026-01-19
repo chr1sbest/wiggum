@@ -1,6 +1,6 @@
 module github.com/chr1sbest/wiggum
 
-go 1.23.1
+go 1.24
 
 require (
 	github.com/fsnotify/fsnotify v1.9.0

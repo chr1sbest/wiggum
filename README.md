@@ -29,6 +29,7 @@ brew install ralph
 
 ### Requirements
 
+- **Go 1.24** or later
 - **Claude Code CLI** must be installed and available on your `PATH` as `claude`.
   - Install: https://code.claude.com/docs/en/setup
   - Quick install: `curl -fsSL https://claude.ai/install.sh | bash`
