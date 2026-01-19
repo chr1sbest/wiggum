@@ -271,9 +271,7 @@ evals/
 │   └── logagg/
 │       ├── suite.yaml
 │       └── run_tests.sh     # Can use scripts instead of pytest
-├── results/                 # Generated result JSON files
-├── run.sh                   # Core evaluation runner (called by CLI)
-└── compare_evals.sh         # Comparison tool (called by CLI)
+└── results/                 # Generated result JSON files
 ```
 
 ## What's Measured
