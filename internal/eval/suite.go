@@ -8,20 +8,33 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// SuiteType indicates the type of project being tested
+type SuiteType string
+
+const (
+	SuiteTypeWeb SuiteType = "web" // Web app - starts server, runs pytest
+	SuiteTypeCLI SuiteType = "cli" // CLI tool - builds binary, runs Go tests
+)
+
 // SuiteConfig represents the configuration for an evaluation suite
 type SuiteConfig struct {
-	Name         string      `yaml:"name"`
-	Description  string      `yaml:"description"`
-	Requirements string      `yaml:"requirements"`
-	Language     string      `yaml:"language"`
-	Timeout      string      `yaml:"timeout"`
-	Setup        []string    `yaml:"setup"`
-	Tests        TestsConfig `yaml:"tests"`
+	Name         string    `yaml:"name"`
+	Description  string    `yaml:"description"`
+	Requirements string    `yaml:"requirements"`
+	Language     string    `yaml:"language"`
+	Type         SuiteType `yaml:"type"` // "web" or "cli"
+	Timeout      string    `yaml:"timeout"`
+	Setup        []string  `yaml:"setup"`
 }
 
-// TestsConfig represents the test configuration section
-type TestsConfig struct {
-	Shared []string `yaml:"shared"`
+// IsWebApp returns true if this is a web application suite
+func (s *SuiteConfig) IsWebApp() bool {
+	return s.Type == SuiteTypeWeb || s.Type == ""
+}
+
+// IsCLI returns true if this is a CLI tool suite
+func (s *SuiteConfig) IsCLI() bool {
+	return s.Type == SuiteTypeCLI
 }
 
 // LoadSuite loads a suite configuration from the suite.yaml file

@@ -2,12 +2,9 @@ name: flask
 description: Simple Flask web server showing current day with basic HTML and styling
 requirements: examples/flask_requirements.md
 language: python
+type: web
 timeout: 30m
 
 setup:
   - python3 -m venv venv
   - source venv/bin/activate && pip install flask pytest requests
-
-tests:
-  shared:
-    - source venv/bin/activate && pytest evals/suites/flask/tests/ -v

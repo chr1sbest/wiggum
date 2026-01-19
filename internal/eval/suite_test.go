@@ -8,36 +8,36 @@ import (
 
 func TestLoadSuite(t *testing.T) {
 	tests := []struct {
-		name          string
-		suiteName     string
-		wantErr       bool
-		expectedName  string
-		expectedLang  string
-		expectedTests int
+		name         string
+		suiteName    string
+		wantErr      bool
+		expectedName string
+		expectedLang string
+		expectedType SuiteType
 	}{
 		{
-			name:          "logagg suite",
-			suiteName:     "logagg",
-			wantErr:       false,
-			expectedName:  "logagg",
-			expectedLang:  "go",
-			expectedTests: 1,
+			name:         "logagg suite",
+			suiteName:    "logagg",
+			wantErr:      false,
+			expectedName: "logagg",
+			expectedLang: "go",
+			expectedType: SuiteTypeCLI,
 		},
 		{
-			name:          "flask suite",
-			suiteName:     "flask",
-			wantErr:       false,
-			expectedName:  "flask",
-			expectedLang:  "python",
-			expectedTests: 1,
+			name:         "flask suite",
+			suiteName:    "flask",
+			wantErr:      false,
+			expectedName: "flask",
+			expectedLang: "python",
+			expectedType: SuiteTypeWeb,
 		},
 		{
-			name:          "tasktracker suite",
-			suiteName:     "tasktracker",
-			wantErr:       false,
-			expectedName:  "tasktracker",
-			expectedLang:  "python",
-			expectedTests: 1,
+			name:         "tasktracker suite",
+			suiteName:    "tasktracker",
+			wantErr:      false,
+			expectedName: "tasktracker",
+			expectedLang: "python",
+			expectedType: SuiteTypeWeb,
 		},
 		{
 			name:      "non-existent suite",
@@ -72,8 +72,8 @@ func TestLoadSuite(t *testing.T) {
 			if config.Language != tt.expectedLang {
 				t.Errorf("LoadSuite() Language = %v, want %v", config.Language, tt.expectedLang)
 			}
-			if len(config.Tests.Shared) != tt.expectedTests {
-				t.Errorf("LoadSuite() Tests.Shared length = %v, want %v", len(config.Tests.Shared), tt.expectedTests)
+			if config.Type != tt.expectedType {
+				t.Errorf("LoadSuite() Type = %v, want %v", config.Type, tt.expectedType)
 			}
 			if config.Description == "" {
 				t.Errorf("LoadSuite() Description is empty")
@@ -117,11 +117,11 @@ func TestLoadSuiteFields(t *testing.T) {
 	if config.Timeout != "1h" {
 		t.Errorf("Timeout = %v, want 1h", config.Timeout)
 	}
-	if len(config.Tests.Shared) != 1 {
-		t.Errorf("Tests.Shared length = %v, want 1", len(config.Tests.Shared))
+	if config.Type != SuiteTypeCLI {
+		t.Errorf("Type = %v, want cli", config.Type)
 	}
-	if len(config.Tests.Shared) > 0 && config.Tests.Shared[0] == "" {
-		t.Errorf("Tests.Shared[0] is empty")
+	if !config.IsCLI() {
+		t.Errorf("IsCLI() = false, want true")
 	}
 
 	// Test flask suite to verify setup commands

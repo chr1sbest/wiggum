@@ -2,8 +2,5 @@ name: logagg
 description: Log aggregator CLI with parsing, filtering, stats, and query capabilities
 requirements: examples/log_aggregator_requirements.md
 language: go
+type: cli
 timeout: 1h
-
-tests:
-  shared:
-    - evals/suites/logagg/run_tests.sh

@@ -3,7 +3,6 @@ package eval
 import (
 	"bufio"
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -41,8 +40,8 @@ func RunSharedTests(projectDir string, suite *SuiteConfig, port int) (*TestResul
 	fmt.Printf("Port:    %d\n", port)
 	fmt.Println("")
 
-	// Check if this is a CLI tool suite (uses shell script tests)
-	if isCLIToolSuite(suite) {
+	// Route based on suite type
+	if suite.IsCLI() {
 		return runCLITests(projectDir, suite)
 	}
 
@@ -108,68 +107,28 @@ func RunSharedTests(projectDir string, suite *SuiteConfig, port int) (*TestResul
 	return result, nil
 }
 
-// isCLIToolSuite checks if the suite is for a CLI tool (uses shell script tests)
-func isCLIToolSuite(suite *SuiteConfig) bool {
-	if len(suite.Tests.Shared) == 0 {
-		return false
-	}
-	// Check if the test command is a shell script
-	return strings.HasSuffix(suite.Tests.Shared[0], ".sh")
-}
-
-// runCLITests runs tests for CLI tool suites using shell scripts
+// runCLITests runs tests for CLI tool suites
 func runCLITests(projectDir string, suite *SuiteConfig) (*TestResult, error) {
-	fmt.Println("Detected CLI tool suite, running shell script tests...")
-
 	// Find the actual project directory (handle nested dirs)
 	appDir, err := findCLIAppDirectory(projectDir, suite.Language)
 	if err != nil {
 		return nil, err
 	}
 
-	// Get absolute path to the test script
+	// Get fixtures directory
 	cwd, err := os.Getwd()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get working directory: %w", err)
 	}
-	scriptPath := filepath.Join(cwd, suite.Tests.Shared[0])
+	fixturesDir := filepath.Join(cwd, "evals", "suites", suite.Name, "fixtures")
 
-	// Make script executable
-	if err := os.Chmod(scriptPath, 0755); err != nil {
-		fmt.Printf("WARNING: failed to make script executable: %v\n", err)
+	// Route to appropriate test runner based on suite name
+	switch suite.Name {
+	case "logagg":
+		return RunLogaggTests(appDir, fixturesDir)
+	default:
+		return nil, fmt.Errorf("no Go test runner for CLI suite: %s", suite.Name)
 	}
-
-	// Run the test script with the project directory as argument
-	cmd := exec.Command("bash", scriptPath, appDir)
-	cmd.Dir = cwd
-	cmd.Env = os.Environ()
-
-	// Capture output
-	output, err := cmd.CombinedOutput()
-	outputStr := string(output)
-
-	// Print output
-	fmt.Print(outputStr)
-
-	// Parse results from .eval_results.json if it exists
-	resultsPath := filepath.Join(appDir, ".eval_results.json")
-	result, parseErr := parseEvalResultsJSON(resultsPath)
-	if parseErr != nil {
-		// Fall back to parsing output
-		result = parseShellTestOutput(outputStr)
-	}
-
-	// If script failed and we got no results, report error
-	if err != nil && result.Total == 0 {
-		return nil, fmt.Errorf("test script failed: %w", err)
-	}
-
-	fmt.Println("")
-	fmt.Println("═══════════════════════════════════════════════════════════════")
-	fmt.Printf("  Results: %d passed, %d failed, %d skipped\n", result.Passed, result.Failed, result.Skipped)
-	fmt.Println("═══════════════════════════════════════════════════════════════")
-
-	return result, nil
 }
 
 // findCLIAppDirectory finds the app directory for CLI tools
@@ -208,45 +167,6 @@ func findCLIAppDirectory(projectDir string, language string) (string, error) {
 
 	// Default: use project dir itself
 	return projectDir, nil
-}
-
-// parseEvalResultsJSON parses the .eval_results.json file created by test scripts
-func parseEvalResultsJSON(path string) (*TestResult, error) {
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return nil, err
-	}
-
-	var results struct {
-		Passed int `json:"passed"`
-		Failed int `json:"failed"`
-		Total  int `json:"total"`
-	}
-
-	if err := json.Unmarshal(data, &results); err != nil {
-		return nil, err
-	}
-
-	return &TestResult{
-		Passed: results.Passed,
-		Failed: results.Failed,
-		Total:  results.Total,
-	}, nil
-}
-
-// parseShellTestOutput parses test results from shell script output
-func parseShellTestOutput(output string) *TestResult {
-	result := &TestResult{}
-
-	// Look for pattern: "Results: X passed, Y failed out of Z"
-	re := regexp.MustCompile(`Results:\s*(\d+)\s*passed,\s*(\d+)\s*failed`)
-	if matches := re.FindStringSubmatch(output); len(matches) > 2 {
-		result.Passed, _ = strconv.Atoi(matches[1])
-		result.Failed, _ = strconv.Atoi(matches[2])
-		result.Total = result.Passed + result.Failed
-	}
-
-	return result
 }
 
 // findAppDirectory locates the actual app directory, handling nested structures

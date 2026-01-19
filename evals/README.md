@@ -57,66 +57,57 @@ name: string              # Suite identifier (usually matches directory name)
 description: string       # Brief description of what's being built
 requirements: string      # Path to requirements.md file (relative to repo root)
 language: string          # Primary language: go, python, etc.
+type: string              # Suite type: "web" or "cli"
 timeout: string          # Max time allowed (e.g., "30m", "1h", "2h")
 
 setup:                   # Optional setup commands (run before tests)
   - command1
   - command2
-
-tests:
-  shared:                # Shared tests run against both ralph and oneshot outputs
-    - test_command1
-    - test_command2
 ```
 
-### Example: Flask Suite
+**Suite Types:**
+- `web` - Web applications. Starts the server, runs pytest tests from `tests/` directory.
+- `cli` - CLI tools. Builds the binary, runs Go-based tests from `internal/eval/cli_tests.go`.
+
+### Example: Flask Suite (Web App)
 
 ```yaml
 name: flask
 description: Simple Flask web server showing current day with basic HTML and styling
 requirements: examples/flask_requirements.md
 language: python
+type: web
 timeout: 30m
 
 setup:
   - python3 -m venv venv
   - source venv/bin/activate && pip install flask pytest requests
-
-tests:
-  shared:
-    - source venv/bin/activate && pytest evals/suites/flask/tests/ -v
 ```
 
-### Example: Task Tracker Suite
+### Example: Task Tracker Suite (Web App)
 
 ```yaml
 name: tasktracker
 description: REST API with JWT auth, 4 models, ~15 endpoints
 requirements: examples/task_tracker_requirements.md
 language: python
+type: web
 timeout: 2h
 
 setup:
   - python3 -m venv venv
   - source venv/bin/activate && pip install -r requirements.txt
-
-tests:
-  shared:
-    - source venv/bin/activate && pytest evals/suites/tasktracker/tests/ -v
 ```
 
-### Example: Log Aggregator Suite
+### Example: Log Aggregator Suite (CLI Tool)
 
 ```yaml
 name: logagg
 description: Log aggregator CLI with parsing, filtering, stats, and query capabilities
 requirements: examples/log_aggregator_requirements.md
 language: go
+type: cli
 timeout: 1h
-
-tests:
-  shared:
-    - evals/suites/logagg/run_tests.sh
 ```
 
 ## Result JSON Schema
@@ -197,15 +188,12 @@ name: myfeature
 description: Brief description of what's being built
 requirements: examples/my_feature_requirements.md
 language: python  # or go, etc.
+type: web         # or cli
 timeout: 1h
 
 setup:
   - python3 -m venv venv
   - source venv/bin/activate && pip install -r requirements.txt
-
-tests:
-  shared:
-    - source venv/bin/activate && pytest evals/suites/myfeature/tests/ -v
 ```
 
 ### 4. Write Shared Tests
@@ -258,21 +246,23 @@ The framework uses **shared test suites** in `suites/<name>/tests/` that are run
 evals/
 ├── suites/
 │   ├── flask/
-│   │   ├── suite.yaml       # Configuration
-│   │   └── tests/           # Shared test suite
-│   │       ├── conftest.py  # Fixtures
-│   │       └── test_app.py  # Tests
+│   │   ├── suite.yaml       # Configuration (type: web)
+│   │   └── tests/           # Pytest test suite
+│   │       ├── conftest.py
+│   │       └── test_app.py
 │   ├── tasktracker/
-│   │   ├── suite.yaml
+│   │   ├── suite.yaml       # Configuration (type: web)
 │   │   └── tests/
 │   │       ├── conftest.py
 │   │       ├── test_auth.py
 │   │       └── test_tasks.py
 │   └── logagg/
-│       ├── suite.yaml
-│       └── run_tests.sh     # Can use scripts instead of pytest
+│       ├── suite.yaml       # Configuration (type: cli)
+│       └── fixtures/        # Test fixtures for CLI tool
 └── results/                 # Generated result JSON files
 ```
+
+**Note:** CLI tools (`type: cli`) have their tests defined in Go at `internal/eval/cli_tests.go`.
 
 ## What's Measured
 
