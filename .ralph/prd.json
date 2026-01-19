@@ -86,7 +86,7 @@
       "title": "Seed good first issues",
       "details": "Create 3-5 small issues tagged 'good first issue': docs improvements, adding new example requirements file, CLI help text improvements, adding tests for uncovered code paths.",
       "priority": "low",
-      "status": "todo",
+      "status": "done",
       "tests": "At least 3 open issues with 'good first issue' label exist"
     },
     {
