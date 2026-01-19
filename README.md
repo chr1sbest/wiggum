@@ -246,6 +246,102 @@ Ralph maintains detailed run state for crash recovery and monitoring:
 
 If Ralph crashes or is killed, the run state file contains enough information to understand what was being worked on and where the failure occurred. The loop number and current step help identify exactly where execution stopped.
 
+### Per-Step Resilience Configuration
+
+Ralph's loop steps can be configured with fine-grained resilience settings to handle failures gracefully. Each step in `.ralph/configs/default.json` supports the following configuration options:
+
+#### StepConfig Schema
+
+```json
+{
+  "type": "agent",
+  "name": "run-claude",
+  "timeout": "20m",
+  "max_retries": 1,
+  "retry_delay": "30s",
+  "continue_on_error": false,
+  "circuit_breaker": {
+    "threshold": 3,
+    "reset_after": "5m"
+  },
+  "config": {
+    // Step-specific configuration
+  }
+}
+```
+
+#### Resilience Options
+
+- **`timeout`** - Maximum duration for step execution (e.g., "30s", "5m", "20m")
+  - If a step exceeds this timeout, it will be terminated
+  - Default: No timeout
+
+- **`max_retries`** - Number of retry attempts if the step fails (0 = no retries)
+  - Each retry uses exponential backoff based on `retry_delay`
+  - Default: 0
+
+- **`retry_delay`** - Initial delay between retry attempts (e.g., "1s", "500ms", "30s")
+  - Subsequent retries use exponential backoff: 1x, 2x, 4x, etc.
+  - Default: 1 second
+
+- **`continue_on_error`** - Whether to proceed to next step even if this step fails
+  - Useful for optional steps like git commits that shouldn't block the loop
+  - Default: false (stop on error)
+
+- **`circuit_breaker`** - Circuit breaker configuration to prevent cascading failures
+  - **`threshold`** - Number of consecutive failures before opening the circuit
+  - **`reset_after`** - Duration to wait before attempting to close the circuit (e.g., "30s", "5m")
+  - When the circuit is open, the step is skipped to prevent repeated failures
+  - After `reset_after` duration, the circuit enters "half-open" state and tries one execution
+  - Default: No circuit breaker
+
+#### Example Configuration
+
+Here's an example showing different resilience patterns for different step types:
+
+```json
+{
+  "name": "resilient-loop",
+  "max_loops_per_task": 10,
+  "steps": [
+    {
+      "type": "agent",
+      "name": "run-claude",
+      "timeout": "20m",
+      "max_retries": 1,
+      "retry_delay": "30s",
+      "circuit_breaker": {
+        "threshold": 3,
+        "reset_after": "5m"
+      },
+      "config": {
+        "prompt_file": ".ralph/prompts/LOOP_PROMPT.md",
+        "prd_file": ".ralph/prd.json"
+      }
+    },
+    {
+      "type": "git-commit",
+      "name": "commit-progress",
+      "continue_on_error": true,
+      "config": {
+        "enabled": true,
+        "repo_dir": "."
+      }
+    },
+    {
+      "type": "command",
+      "name": "run-tests",
+      "timeout": "10m",
+      "max_retries": 2,
+      "retry_delay": "10s",
+      "config": {
+        "command": ["go", "test", "./..."]
+      }
+    }
+  ]
+}
+```
+
 ## FAQ
 
 ### Do I have to pass a requirements file to `init`?
