@@ -38,7 +38,7 @@
       "title": "Implement oneshot approach execution",
       "details": "In internal/eval/runner.go, implement runOneshotApproach() that: 1) Creates project directory, 2) Builds prompt from requirements content matching run.sh format, 3) Runs 'claude --model \u003cmodel\u003e --dangerously-skip-permissions --output-format json' with prompt via stdin, 4) Parses JSON output for input_tokens, output_tokens, total_cost_usd, 5) Returns EvalResult. Handle timeout and JSON parsing errors gracefully.",
       "priority": "high",
-      "status": "todo",
+      "status": "done",
       "tests": "Integration test with mock claude command; token metrics correctly extracted from JSON output"
     },
     {
