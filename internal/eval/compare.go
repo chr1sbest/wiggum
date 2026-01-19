@@ -55,14 +55,14 @@ func printComparison(ralph, oneshot *EvalResult, ralphFile, oneshotFile string) 
 	testsWinner := calcWinner(ralph.SharedTestsPassed, oneshot.SharedTestsPassed, true)
 
 	// Print comparison table
-	fmt.Println("┌──────────────────────┬───────────────────┬───────────────────┬─────────────────────┐")
-	fmt.Printf("│ %-20s │ %-17s │ %-17s │ %-19s │\n", "Metric", "Ralph", "Oneshot", "Winner")
-	fmt.Println("├──────────────────────┼───────────────────┼───────────────────┼─────────────────────┤")
-	fmt.Printf("│ %-20s │ %15ds │ %15ds │ %-19s │\n", "Duration", ralph.DurationSeconds, oneshot.DurationSeconds, durationWinner)
-	fmt.Printf("│ %-20s │ %17d │ %17d │ %-19s │\n", "Total Tokens", ralph.TotalTokens, oneshot.TotalTokens, tokensWinner)
-	fmt.Printf("│ %-20s │ $%16.2f │ $%16.2f │ %-19s │\n", "Cost", ralph.CostUSD, oneshot.CostUSD, costWinner)
-	fmt.Printf("│ %-20s │ %13d/%d │ %13d/%d │ %-19s │\n", "Shared Tests", ralph.SharedTestsPassed, ralph.SharedTestsTotal, oneshot.SharedTestsPassed, oneshot.SharedTestsTotal, testsWinner)
-	fmt.Println("└──────────────────────┴───────────────────┴───────────────────┴─────────────────────┘")
+	fmt.Println("┌────────────────┬─────────────┬─────────────┬────────────────────┐")
+	fmt.Println("│         Metric │       Ralph │     Oneshot │             Winner │")
+	fmt.Println("├────────────────┼─────────────┼─────────────┼────────────────────┤")
+	fmt.Printf("│       Duration │ %10ds │ %10ds │ %18s │\n", ralph.DurationSeconds, oneshot.DurationSeconds, durationWinner)
+	fmt.Printf("│   Total Tokens │ %11d │ %11d │ %18s │\n", ralph.TotalTokens, oneshot.TotalTokens, tokensWinner)
+	fmt.Printf("│           Cost │ %11s │ %11s │ %18s │\n", fmt.Sprintf("$%.2f", ralph.CostUSD), fmt.Sprintf("$%.2f", oneshot.CostUSD), costWinner)
+	fmt.Printf("│   Shared Tests │ %11s │ %11s │ %18s │\n", fmt.Sprintf("%d/%d", ralph.SharedTestsPassed, ralph.SharedTestsTotal), fmt.Sprintf("%d/%d", oneshot.SharedTestsPassed, oneshot.SharedTestsTotal), testsWinner)
+	fmt.Println("└────────────────┴─────────────┴─────────────┴────────────────────┘")
 	fmt.Println()
 
 	// Calculate overall winner
@@ -100,65 +100,57 @@ func printComparison(ralph, oneshot *EvalResult, ralphFile, oneshotFile string) 
 // higherIsBetter indicates whether higher values are better (e.g., tests passed)
 // or lower values are better (e.g., duration, tokens, cost)
 func calcWinner(ralphVal, oneshotVal int, higherIsBetter bool) string {
-	if oneshotVal == 0 {
-		return "N/A"
+	if oneshotVal == 0 && ralphVal == 0 {
+		return "Tie"
 	}
-
-	// Calculate percentage difference
-	diff := float64(ralphVal-oneshotVal) / float64(oneshotVal) * 100
-	absDiff := math.Abs(diff)
-
-	// Round to 2 decimal places
-	absDiff = math.Round(absDiff*100) / 100
-
-	if absDiff < 0.01 {
+	if oneshotVal == 0 {
+		return "Ralph"
+	}
+	if ralphVal == oneshotVal {
 		return "Tie"
 	}
 
 	// Determine winner based on whether higher or lower is better
 	if higherIsBetter {
-		// For tests, higher is better
-		if diff > 0 {
-			return fmt.Sprintf("Ralph +%.2f%%", absDiff)
+		if ralphVal > oneshotVal {
+			return fmt.Sprintf("Ralph (+%d)", ralphVal-oneshotVal)
 		}
-		return fmt.Sprintf("Oneshot +%.2f%%", absDiff)
+		return fmt.Sprintf("Oneshot (+%d)", oneshotVal-ralphVal)
 	}
 
 	// For cost/time/tokens, lower is better
-	if diff < 0 {
-		return fmt.Sprintf("Ralph -%.2f%%", absDiff)
+	if ralphVal < oneshotVal {
+		return fmt.Sprintf("Ralph (%.1fx)", float64(oneshotVal)/float64(ralphVal))
 	}
-	return fmt.Sprintf("Oneshot -%.2f%%", absDiff)
+	return fmt.Sprintf("Oneshot (%.1fx)", float64(ralphVal)/float64(oneshotVal))
 }
 
 // calcWinnerFloat calculates the winner for float metrics (e.g., cost)
 func calcWinnerFloat(ralphVal, oneshotVal float64, higherIsBetter bool) string {
+	if oneshotVal == 0 && ralphVal == 0 {
+		return "Tie"
+	}
 	if oneshotVal == 0 {
-		return "N/A"
+		return "Ralph"
 	}
 
-	// Calculate percentage difference
-	diff := (ralphVal - oneshotVal) / oneshotVal * 100
-	absDiff := math.Abs(diff)
-
-	// Round to 2 decimal places
-	absDiff = math.Round(absDiff*100) / 100
-
-	if absDiff < 0.01 {
+	// Check for effective tie (within 1%)
+	diff := math.Abs(ralphVal-oneshotVal) / oneshotVal
+	if diff < 0.01 {
 		return "Tie"
 	}
 
 	// Determine winner based on whether higher or lower is better
 	if higherIsBetter {
-		if diff > 0 {
-			return fmt.Sprintf("Ralph +%.2f%%", absDiff)
+		if ralphVal > oneshotVal {
+			return fmt.Sprintf("Ralph (%.1fx)", ralphVal/oneshotVal)
 		}
-		return fmt.Sprintf("Oneshot +%.2f%%", absDiff)
+		return fmt.Sprintf("Oneshot (%.1fx)", oneshotVal/ralphVal)
 	}
 
 	// For cost/time/tokens, lower is better
-	if diff < 0 {
-		return fmt.Sprintf("Ralph -%.2f%%", absDiff)
+	if ralphVal < oneshotVal {
+		return fmt.Sprintf("Ralph (%.1fx)", oneshotVal/ralphVal)
 	}
-	return fmt.Sprintf("Oneshot -%.2f%%", absDiff)
+	return fmt.Sprintf("Oneshot (%.1fx)", ralphVal/oneshotVal)
 }
