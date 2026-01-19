@@ -14,7 +14,7 @@
       "title": "Create eval runner config types",
       "details": "Create internal/eval/config.go with RunConfig struct containing: SuiteName, Approach (ralph|oneshot), Model, TimeoutSeconds, OutputDir. Add validation methods for approach and model. Include constants for default timeout (7200s) and supported approaches.",
       "priority": "high",
-      "status": "todo",
+      "status": "done",
       "tests": "go build succeeds; validation rejects invalid approaches and empty suite names"
     },
     {
