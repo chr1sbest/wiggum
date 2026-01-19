@@ -208,6 +208,17 @@ your-project/
 └── README.md
 ```
 
+### Task Statuses
+
+Tasks in `prd.json` progress through these statuses:
+
+- **`todo`** - Task has not been started yet
+- **`in_progress`** - Task is currently being worked on
+- **`done`** - Task completed successfully
+- **`failed`** - Task exceeded max_loops_per_task without completion
+
+Ralph automatically picks the first `todo` task and moves it through these states. If a task takes too many loop iterations without completing, it's marked as `failed` to prevent infinite loops.
+
 ## FAQ
 
 ### Do I have to pass a requirements file to `init`?

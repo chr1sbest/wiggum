@@ -139,6 +139,15 @@ Reads task completion from `.ralph/prd.json`.
 
 ## Task Lifecycle
 
+Tasks in `prd.json` progress through these statuses:
+
+| Status | Description |
+|--------|-------------|
+| `todo` | Task has not been started yet |
+| `in_progress` | Task is currently being worked on |
+| `done` | Task completed successfully |
+| `failed` | Task exceeded max_loops_per_task without completion |
+
 ```
                     ┌──────────────────┐
                     │   requirements   │
