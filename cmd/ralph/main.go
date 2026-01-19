@@ -26,6 +26,8 @@ func main() {
 		newProjectCmd(os.Args[2:])
 	case "add", "new-work":
 		newWorkCmd(os.Args[2:])
+	case "fix":
+		fixCmd(os.Args[2:])
 	case "upgrade":
 		os.Exit(upgradeCmd(os.Args[2:]))
 	case "version":
@@ -52,14 +54,16 @@ Commands:
   run          Run the main loop (Ralph does the work)
   init         Start a new Ralph project (fresh crayons!)
   add          Add more work for Ralph to think about
+  fix          Create tasks from a GitHub issue
   upgrade      Check for updates and upgrade Ralph
   version      Show Ralph's version number
   help         Show this message again (I like explaining)
 
 Examples:
-  ralph init myproject requirements.md
-  ralph add "Add an endpoint that returns the user's country based on IP"
+  mkdir myproject && cd myproject
+  ralph init requirements.md
   ralph run
+  ralph add "Add an endpoint that returns the user's country based on IP"
 
 Notes:
   - Ralph works one thing at a time.

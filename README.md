@@ -27,21 +27,35 @@ brew install ralph
 Write requirements in an .md file (see /examples) then have Ralph get to work.
 
 ```bash
-# Create a new project using pre-defined requirements
-ralph init myproject requirements.md
+# Create a new project directory
+mkdir myproject && cd myproject
+
+# Initialize Ralph with your requirements
+ralph init requirements.md
 
 # Run the Ralph loop
-cd myproject
 ralph run
 ```
+
+Ralph works like `git init` — run it in the directory where you want to work. It creates a `.ralph/` folder with your task list and configuration, and adds `.ralph/` to your `.gitignore`.
 
 ### Examples
 
 - `examples/flask_requirements.md` - minimal Flask webapp to display the current day
 
 ```bash
-ralph init flasky examples/flask_requirements.md
-cd flasky
+mkdir flasky && cd flasky
+ralph init ../examples/flask_requirements.md
+ralph run
+```
+
+### Attach to existing project
+
+Ralph works with existing codebases too:
+
+```bash
+cd my-existing-repo
+ralph init requirements.md
 ralph run
 ```
 
@@ -97,20 +111,22 @@ brew upgrade ralph
 
 ### Project Structure
 
-Projects created by `ralph init` include:
-- `.ralph/prd.json` - Task tracking (source of truth)
-- `.ralph/prd_archive.json` - Archived completed tasks (created/updated by `ralph add`)
-- `.ralph/requirements.md` - Project requirements
-- `.ralph/learnings.md` - Persistent learnings across loop iterations (created/updated over time)
-- `.ralph/prompts/SETUP_PROMPT.md` - Setup prompt (initial scaffolding / planning)
-- `.ralph/prompts/LOOP_PROMPT.md` - Worker loop prompt (iterative implementation)
-- `.ralph/configs/default.json` - Loop configuration
-- `.ralph/logs/` - Claude output logs
-- `.ralph/run_state.json` - Current run state
-- `.ralph/run_metrics.json` - Token/cost/time metrics
-- `.ralph/progress.json` - Status/progress for the terminal UI
-- `.ralph/.ralph_lock` - Prevents concurrent runs
-- `./<project>/<project>/.git` - Git repository for application code
+`ralph init` creates a `.ralph/` directory in your project:
+
+```
+your-project/
+├── .ralph/
+│   ├── prd.json              # Task list (source of truth)
+│   ├── requirements.md       # Original requirements
+│   ├── configs/default.json  # Loop configuration
+│   ├── prompts/              # SETUP_PROMPT.md, LOOP_PROMPT.md
+│   ├── logs/                 # Claude output logs
+│   ├── run_state.json        # Current run state
+│   ├── run_metrics.json      # Token/cost/time metrics
+│   └── .ralph_lock           # Prevents concurrent runs
+├── your code files...        # Application code goes here
+└── README.md
+```
 
 ## FAQ
 
@@ -120,7 +136,7 @@ Yes. `init` requires a markdown requirements file.
 
 ### I ran `ralph run` and it says files are missing
 
-Run `ralph run` from the project root created by `ralph init` (the directory containing `.ralph/` and the nested application code directory).
+Run `ralph run` from the directory where you ran `ralph init` (the directory containing `.ralph/`).
 
 ### Ralph says the lock is held
 

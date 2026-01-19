@@ -14,23 +14,21 @@ func newProjectCmd(args []string) {
 	fs := flag.NewFlagSet("init", flag.ContinueOnError)
 	fs.SetOutput(io.Discard)
 	fs.Usage = func() {
-		fmt.Print(`init 🖍️  Start a new Ralph project
+		fmt.Print(`init 🖍️  Initialize Ralph in the current directory
 
 Usage:
-  ralph init <name> <requirements.md>
-  ralph init -name <name> -requirements <file> [-model <model>]
+  ralph init <requirements.md>
+  ralph init -requirements <file> [-model <model>]
 
 Flags:
-  -name           Project name
   -requirements   Path to requirements.md file (required)
   -model          Claude model to use (default: opus)
 
 Examples:
-  ralph init myproject requirements.md
-  ralph init -name myproject -requirements requirements.md -model opus
+  ralph init requirements.md
+  ralph init -requirements requirements.md -model opus
 `)
 	}
-	name := fs.String("name", "", "Project name")
 	reqFile := fs.String("requirements", "", "Path to requirements.md file (required)")
 	model := fs.String("model", "", "Claude model to use")
 	if err := fs.Parse(args); err != nil {
@@ -44,31 +42,29 @@ Examples:
 	}
 
 	pos := fs.Args()
-	if *name == "" && len(pos) >= 1 {
-		*name = pos[0]
+	if *reqFile == "" && len(pos) >= 1 {
+		*reqFile = pos[0]
 	}
-	if *reqFile == "" && len(pos) >= 2 {
-		*reqFile = pos[1]
-	}
-	if len(pos) >= 3 {
+	if len(pos) >= 2 {
 		fmt.Fprintln(os.Stderr, "Too many arguments.")
 		fmt.Fprintln(os.Stderr, "Usage:")
-		fmt.Fprintln(os.Stderr, "  ralph init <name> <requirements.md>")
-		fmt.Fprintln(os.Stderr, "  ralph init -name <name> -requirements <file>")
+		fmt.Fprintln(os.Stderr, "  ralph init <requirements.md>")
+		fmt.Fprintln(os.Stderr, "  ralph init -requirements <file>")
 		os.Exit(1)
 	}
 
-	if *name == "" {
-		fmt.Fprintln(os.Stderr, "Project name is required:")
-		fmt.Fprintln(os.Stderr, "  ralph init <name> <requirements.md>")
-		fmt.Fprintln(os.Stderr, "  ralph init -name <name> -requirements <file>")
+	// Get project name from current directory
+	cwd, err := os.Getwd()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to get current directory: %v\n", err)
 		os.Exit(1)
 	}
+	projectName := filepath.Base(cwd)
 
 	if *reqFile == "" {
 		fmt.Fprintln(os.Stderr, "Requirements file is required:")
-		fmt.Fprintln(os.Stderr, "  ralph init <name> <requirements.md>")
-		fmt.Fprintln(os.Stderr, "  ralph init -name <name> -requirements <file>")
+		fmt.Fprintln(os.Stderr, "  ralph init <requirements.md>")
+		fmt.Fprintln(os.Stderr, "  ralph init -requirements <file>")
 		fmt.Fprintln(os.Stderr, "\nCreate a requirements.md with:")
 		fmt.Fprintln(os.Stderr, "  - What you want to build")
 		fmt.Fprintln(os.Stderr, "  - Key features or functionality")
@@ -100,7 +96,7 @@ Examples:
 
 	fmt.Printf("Analyzing requirements with Claude (model: %s)...\n", analysisModel)
 
-	prompt, err := renderNewProjectPrompt(*name, string(reqContent))
+	prompt, err := renderNewProjectPrompt(projectName, string(reqContent))
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to build Claude prompt: %v\n", err)
 		os.Exit(1)
@@ -136,16 +132,12 @@ Examples:
 		os.Exit(1)
 	}
 
-	projectDir := *name
-	ralphDir := filepath.Join(projectDir, ".ralph")
-	codeDir := filepath.Join(projectDir, *name)
+	ralphDir := ".ralph"
 
 	dirs := []string{
-		projectDir,
 		filepath.Join(ralphDir, "configs"),
 		filepath.Join(ralphDir, "logs"),
 		filepath.Join(ralphDir, "prompts"),
-		codeDir,
 	}
 
 	for _, d := range dirs {
@@ -156,7 +148,7 @@ Examples:
 	}
 
 	configContent, err := renderDefaultLoopConfig(DefaultLoopConfigOptions{
-		RepoDir:           *name,
+		RepoDir:           ".",
 		SetupPromptFile:   ".ralph/prompts/SETUP_PROMPT.md",
 		LoopPromptFile:    ".ralph/prompts/LOOP_PROMPT.md",
 		MarkerFile:        ".ralph/.ralph_setup_done",
@@ -179,22 +171,12 @@ Examples:
 		os.Exit(1)
 	}
 
-	readmeContent, err := renderReadme(*name, string(reqContent))
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to render README.md: %v\n", err)
-		os.Exit(1)
-	}
-	if err := os.WriteFile(filepath.Join(codeDir, "README.md"), []byte(readmeContent), 0644); err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to create README.md: %v\n", err)
-		os.Exit(1)
-	}
-
-	setupPrompt, err := renderSetupPrompt(*name, string(reqContent))
+	setupPrompt, err := renderSetupPrompt(projectName, string(reqContent))
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to render SETUP_PROMPT.md: %v\n", err)
 		os.Exit(1)
 	}
-	loopPrompt, err := renderLoopPrompt(*name, string(reqContent))
+	loopPrompt, err := renderLoopPrompt(projectName, string(reqContent))
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to render LOOP_PROMPT.md: %v\n", err)
 		os.Exit(1)
@@ -212,15 +194,15 @@ Examples:
 		os.Exit(1)
 	}
 
-	gitInitAndInitialCommit(codeDir)
+	// Append .ralph/ to .gitignore if not already present
+	appendToGitignore(".ralph/")
 
 	taskCount := strings.Count(prdContent, "\"id\"")
 
-	fmt.Printf("Created project: %s\n", projectDir)
+	fmt.Printf("Initialized Ralph in: %s\n", cwd)
 	fmt.Printf("Tasks: %d\n", taskCount)
-	fmt.Printf("Tasks file: %s\n", filepath.Join(projectDir, ".ralph", "prd.json"))
-	fmt.Println("\nNext steps:")
-	fmt.Printf("  cd %s\n", projectDir)
+	fmt.Printf("Tasks file: %s\n", filepath.Join(ralphDir, "prd.json"))
+	fmt.Println("\nNext step:")
 	fmt.Println("  ralph run")
 }
 
@@ -232,4 +214,34 @@ func parseGeneratedPRD(response string) string {
 	}
 	content := strings.TrimSpace(response[idx+len(marker):])
 	return stripJSONFences(content)
+}
+
+// appendToGitignore adds an entry to .gitignore if not already present
+func appendToGitignore(entry string) {
+	gitignorePath := ".gitignore"
+	content, err := os.ReadFile(gitignorePath)
+	if err != nil && !os.IsNotExist(err) {
+		return // Can't read, skip silently
+	}
+
+	// Check if entry already exists
+	lines := strings.Split(string(content), "\n")
+	for _, line := range lines {
+		if strings.TrimSpace(line) == entry {
+			return // Already present
+		}
+	}
+
+	// Append entry
+	f, err := os.OpenFile(gitignorePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return // Can't open, skip silently
+	}
+	defer f.Close()
+
+	// Add newline before if file doesn't end with one
+	if len(content) > 0 && content[len(content)-1] != '\n' {
+		f.WriteString("\n")
+	}
+	f.WriteString(entry + "\n")
 }

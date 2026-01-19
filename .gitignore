@@ -31,3 +31,7 @@ Thumbs.db
 
 # Examples
 flasky/
+
+# Evals
+eval-*/
+evals/results/

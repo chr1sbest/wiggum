@@ -11,12 +11,12 @@ Set up the project foundation so subsequent loop iterations can implement tasks.
 ## Context
 - Requirements: .ralph/requirements.md
 - Task list: .ralph/prd.json
-- Code directory: ./{{.ProjectName}}/
+- Code goes in the current directory (not .ralph/)
 
 ## Instructions
 1. Read .ralph/requirements.md to understand what you're building.
 2. Read .ralph/prd.json to see the task breakdown.
-3. Set up the project structure in ./{{.ProjectName}}/:
+3. Set up the project structure:
    - Create necessary directories
    - Initialize dependency files (requirements.txt, package.json, go.mod, etc.)
    - Create placeholder files for main entry points
@@ -29,10 +29,10 @@ Set up the project foundation so subsequent loop iterations can implement tasks.
 
 ## Example Setup Actions
 For a Python Flask project:
-- Create ./{{.ProjectName}}/app.py with minimal Flask app
-- Create ./{{.ProjectName}}/requirements.txt with flask
-- Create ./{{.ProjectName}}/templates/ directory if needed
+- Create app.py with minimal Flask app
+- Create requirements.txt with flask
+- Create templates/ directory if needed
 
 For a Go CLI:
-- Create ./{{.ProjectName}}/main.go with package main and empty main()
+- Create main.go with package main and empty main()
 - Run go mod init if needed

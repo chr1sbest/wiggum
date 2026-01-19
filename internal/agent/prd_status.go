@@ -67,12 +67,19 @@ type PRDStatus struct {
 	TotalTasks      int
 	CompletedTasks  int
 	IncompleteTasks int
+	TodoTasks       int
+	FailedTasks     int
 	CurrentTaskID   string
 	CurrentTask     string
 }
 
 func (s *PRDStatus) IsComplete() bool {
 	return s.TotalTasks > 0 && s.IncompleteTasks == 0
+}
+
+// HasActionableTasks returns true if there are tasks that can be worked on (status "todo")
+func (s *PRDStatus) HasActionableTasks() bool {
+	return s.TodoTasks > 0
 }
 
 func (s *PRDStatus) Progress() string {
@@ -107,9 +114,16 @@ func LoadPRDStatus(path string) (*PRDStatus, error) {
 		status := strings.ToLower(strings.TrimSpace(t.Status))
 		id := strings.TrimSpace(t.ID)
 		title := strings.TrimSpace(t.Title)
-		if status == "done" {
+		switch status {
+		case "done":
 			st.CompletedTasks++
-		} else {
+		case "todo":
+			st.TodoTasks++
+			st.IncompleteTasks++
+		case "failed":
+			st.FailedTasks++
+			st.IncompleteTasks++
+		default: // in_progress or other
 			st.IncompleteTasks++
 		}
 		if st.CurrentTask == "" && status == "in_progress" && title != "" {

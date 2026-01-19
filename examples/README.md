@@ -27,7 +27,15 @@ ralph run
 
 You should run `ralph run` from the **project root** (the directory created by `ralph init`, i.e. the folder containing `.ralph/` and `./<project>/`).
 
-## Example: Flask Day Server
+## Available Examples
+
+| File | Description | Complexity |
+|------|-------------|------------|
+| `flask_requirements.md` | Simple Flask app displaying current day | Low (~3 tasks) |
+| `log_aggregator_requirements.md` | Go CLI for parsing, filtering, alerting on logs | High (~18 tasks) |
+| `static_site_generator_requirements.md` | Python CLI static site builder with templates | High (~20 tasks) |
+
+## Example: Flask Day Server (simple)
 
 ```bash
 ralph init flasky examples/flask_requirements.md
@@ -35,9 +43,23 @@ cd flasky
 ralph run
 ```
 
-After Ralph finishes, follow the generated app README:
+## Example: Log Aggregator CLI (complex)
+
+A Go CLI tool for parsing, filtering, and alerting on log files. Good for comparing Ralph vs one-shot prompts.
 
 ```bash
-cd flasky
-cat flasky/README.md
+ralph init logagg examples/log_aggregator_requirements.md
+cd logagg
+ralph run
+```
+
+See `evals/` for scripts to benchmark Ralph against single-shot Claude prompts.
+
+## After Ralph finishes
+
+Follow the generated app README:
+
+```bash
+cd <project>/<project>
+cat README.md
 ```

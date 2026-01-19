@@ -202,9 +202,19 @@ func (s *AgentStep) Execute(ctx context.Context, rawConfig json.RawMessage) erro
 	writeTracking("executing", prdStatus, sessionState, "run-claude", nil)
 
 	// Check if we should exit before starting
-	if exitReason := s.exitDetector.Check(nil, prdStatus != nil && prdStatus.IsComplete()); exitReason != agent.ExitReasonNone {
+	completedBefore := 0
+	if prdStatus != nil {
+		completedBefore = prdStatus.CompletedTasks
+	}
+	if exitReason := s.exitDetector.Check(prdStatus != nil && prdStatus.IsComplete(), completedBefore); exitReason != agent.ExitReasonNone {
 		writeTracking("complete", prdStatus, sessionState, "run-claude", nil)
 		return &AgentExitError{Reason: exitReason}
+	}
+
+	// Exit early if no actionable tasks (all done or failed, none todo)
+	if prdStatus != nil && !prdStatus.HasActionableTasks() && prdStatus.TotalTasks > 0 {
+		writeTracking("complete", prdStatus, sessionState, "run-claude", nil)
+		return &AgentExitError{Reason: agent.ExitReasonNoActionableTasks}
 	}
 
 	// Read prompt file
@@ -260,16 +270,17 @@ func (s *AgentStep) Execute(ctx context.Context, rawConfig json.RawMessage) erro
 		})
 	}
 
-	// Parse RALPH_STATUS from output
-	ralphStatus := agent.ParseRalphStatus(output)
-
 	// Check exit conditions
 	// Re-load prd status after the agent may have updated it.
 	prdStatusAfter, _ := agent.LoadPRDStatus(cfg.PrdFile)
 	planComplete := prdStatusAfter != nil && prdStatusAfter.IsComplete()
-	if exitReason := s.exitDetector.Check(ralphStatus, planComplete); exitReason != agent.ExitReasonNone {
+	completedAfter := 0
+	if prdStatusAfter != nil {
+		completedAfter = prdStatusAfter.CompletedTasks
+	}
+	if exitReason := s.exitDetector.Check(planComplete, completedAfter); exitReason != agent.ExitReasonNone {
 		writeTracking("complete", prdStatusAfter, sessionState, "run-claude", nil)
-		return &AgentExitError{Reason: exitReason, Status: ralphStatus}
+		return &AgentExitError{Reason: exitReason}
 	}
 
 	writeTracking("executing", prdStatusAfter, sessionState, "run-claude", nil)
@@ -421,7 +432,6 @@ func (s *AgentStep) saveOutput(logDir, output string, loopCount int) {
 // AgentExitError indicates the agent has determined work is complete
 type AgentExitError struct {
 	Reason agent.ExitReason
-	Status *agent.RalphStatus
 }
 
 func (e *AgentExitError) Error() string {
