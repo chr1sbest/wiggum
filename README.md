@@ -97,6 +97,29 @@ Next step:
 ```bash
 ralph run
 ```
+
+### Open a pull request
+
+Use `pr` to push your branch and open a pull request with an auto-generated summary:
+
+```bash
+# Create a feature branch
+git checkout -b feature/my-feature
+
+# Do work
+ralph run
+
+# Push and open PR
+ralph pr
+```
+
+Options:
+- `--draft` - Create as draft PR
+- `--title "Custom title"` - Override auto-generated title
+- `--base develop` - Target a different base branch (default: main)
+
+The PR body is auto-generated from `.ralph/prd.json`, listing completed tasks and any linked GitHub issues.
+
 ## Development
 
 ### Installation from source

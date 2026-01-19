@@ -1,0 +1,206 @@
+package main
+
+import (
+	"encoding/json"
+	"errors"
+	"flag"
+	"fmt"
+	"io"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"strings"
+)
+
+func prCmd(args []string) int {
+	fs := flag.NewFlagSet("pr", flag.ContinueOnError)
+	fs.SetOutput(io.Discard)
+	fs.Usage = func() {
+		fmt.Print(`pr 📬  Push branch and open a pull request
+
+Usage:
+  ralph pr [flags]
+
+Flags:
+  -title    PR title (default: auto-generated from tasks)
+  -draft    Create as draft PR
+  -base     Base branch (default: main)
+
+Examples:
+  ralph pr
+  ralph pr --draft
+  ralph pr --title "Add auth endpoints" --base develop
+`)
+	}
+
+	title := fs.String("title", "", "PR title")
+	draft := fs.Bool("draft", false, "Create as draft PR")
+	base := fs.String("base", "main", "Base branch")
+
+	if err := fs.Parse(args); err != nil {
+		if errors.Is(err, flag.ErrHelp) {
+			return 0
+		}
+		fmt.Fprintln(os.Stderr, err)
+		fs.Usage()
+		return 1
+	}
+
+	// Check gh is available
+	if _, err := exec.LookPath("gh"); err != nil {
+		fmt.Fprintln(os.Stderr, "GitHub CLI (gh) is required but not found in PATH.")
+		fmt.Fprintln(os.Stderr, "Install: https://cli.github.com/")
+		return 1
+	}
+
+	// Check we're in a git repo
+	if _, err := exec.Command("git", "rev-parse", "--git-dir").Output(); err != nil {
+		fmt.Fprintln(os.Stderr, "Not in a git repository.")
+		return 1
+	}
+
+	// Get current branch
+	branchOut, err := exec.Command("git", "branch", "--show-current").Output()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "Failed to get current branch.")
+		return 1
+	}
+	branch := strings.TrimSpace(string(branchOut))
+
+	// Check we're not on main/master
+	if branch == "main" || branch == "master" || branch == *base {
+		fmt.Fprintf(os.Stderr, "You're on '%s'. Create a feature branch first:\n", branch)
+		fmt.Fprintln(os.Stderr, "  git checkout -b feature/my-feature")
+		fmt.Fprintln(os.Stderr, "  ralph run")
+		fmt.Fprintln(os.Stderr, "  ralph pr")
+		return 1
+	}
+
+	// Generate PR title and body from prd.json
+	prTitle := *title
+	prBody := generatePRBody()
+
+	if prTitle == "" {
+		prTitle = generatePRTitle()
+	}
+
+	// Push branch to origin
+	fmt.Printf("Pushing branch '%s' to origin...\n", branch)
+	pushCmd := exec.Command("git", "push", "-u", "origin", branch)
+	pushCmd.Stdout = os.Stdout
+	pushCmd.Stderr = os.Stderr
+	if err := pushCmd.Run(); err != nil {
+		fmt.Fprintln(os.Stderr, "Failed to push branch.")
+		return 1
+	}
+
+	// Create PR
+	fmt.Println("\nCreating pull request...")
+	ghArgs := []string{"pr", "create", "--base", *base, "--title", prTitle, "--body", prBody}
+	if *draft {
+		ghArgs = append(ghArgs, "--draft")
+	}
+
+	ghCmd := exec.Command("gh", ghArgs...)
+	ghCmd.Stdout = os.Stdout
+	ghCmd.Stderr = os.Stderr
+	if err := ghCmd.Run(); err != nil {
+		fmt.Fprintln(os.Stderr, "Failed to create PR. You may need to authenticate: gh auth login")
+		return 1
+	}
+
+	fmt.Println("\n✓ Pull request created!")
+	return 0
+}
+
+func generatePRTitle() string {
+	prdPath := filepath.Join(".ralph", "prd.json")
+	data, err := os.ReadFile(prdPath)
+	if err != nil {
+		return "Ralph: Completed tasks"
+	}
+
+	var prd prdFile
+	if err := json.Unmarshal(data, &prd); err != nil {
+		return "Ralph: Completed tasks"
+	}
+
+	// Find completed tasks
+	var completed []string
+	for _, t := range prd.Tasks {
+		if strings.ToLower(t.Status) == "done" {
+			completed = append(completed, t.Title)
+		}
+	}
+
+	if len(completed) == 0 {
+		return "Ralph: Work in progress"
+	}
+
+	if len(completed) == 1 {
+		return completed[0]
+	}
+
+	// Multiple tasks - use first one + count
+	return fmt.Sprintf("%s (+%d more)", completed[0], len(completed)-1)
+}
+
+func generatePRBody() string {
+	prdPath := filepath.Join(".ralph", "prd.json")
+	data, err := os.ReadFile(prdPath)
+	if err != nil {
+		return "Tasks completed by Ralph."
+	}
+
+	var prd prdFile
+	if err := json.Unmarshal(data, &prd); err != nil {
+		return "Tasks completed by Ralph."
+	}
+
+	var sb strings.Builder
+	sb.WriteString("## Summary\n\n")
+	sb.WriteString("Tasks completed by Ralph:\n\n")
+
+	var completed, inProgress, todo []prdTask
+	for _, t := range prd.Tasks {
+		switch strings.ToLower(t.Status) {
+		case "done":
+			completed = append(completed, t)
+		case "in_progress":
+			inProgress = append(inProgress, t)
+		default:
+			todo = append(todo, t)
+		}
+	}
+
+	if len(completed) > 0 {
+		sb.WriteString("### ✅ Completed\n\n")
+		for _, t := range completed {
+			sb.WriteString(fmt.Sprintf("- [x] **%s** - %s\n", t.ID, t.Title))
+			if t.Issue != nil {
+				sb.WriteString(fmt.Sprintf("  - Fixes #%d\n", t.Issue.Number))
+			}
+		}
+		sb.WriteString("\n")
+	}
+
+	if len(inProgress) > 0 {
+		sb.WriteString("### 🔄 In Progress\n\n")
+		for _, t := range inProgress {
+			sb.WriteString(fmt.Sprintf("- [ ] **%s** - %s\n", t.ID, t.Title))
+		}
+		sb.WriteString("\n")
+	}
+
+	if len(todo) > 0 {
+		sb.WriteString("### 📋 Remaining\n\n")
+		for _, t := range todo {
+			sb.WriteString(fmt.Sprintf("- [ ] **%s** - %s\n", t.ID, t.Title))
+		}
+		sb.WriteString("\n")
+	}
+
+	sb.WriteString("---\n*Generated by [Ralph](https://github.com/chr1sbest/wiggum)*")
+
+	return sb.String()
+}
