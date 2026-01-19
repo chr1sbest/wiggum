@@ -155,12 +155,17 @@ evals/               # Evaluation/testing framework
 
 ### Key Components
 
-- **cmd/ralph/main.go** - CLI dispatcher routing commands (run, init, add, fix, upgrade)
+- **cmd/ralph/main.go** - CLI dispatcher routing commands (run, init, add, fix, pr, upgrade)
 - **internal/loop/loop.go** - Core loop orchestrator executing steps iteratively
+- **internal/loop/step.go** - Step interface and registry for pluggable step types
 - **internal/loop/steps/agent.go** - Claude Code invocation step with exit detection
 - **internal/agent/prd_status.go** - PRD task parsing (todo → in_progress → done → failed)
+- **internal/agent/session.go** - Session persistence with auto-expiry and transition history
+- **internal/agent/fixplan.go** - Fix plan parsing for GitHub issue task tracking
 - **internal/config/loader.go** - Configuration management with JSON config files
+- **internal/config/watcher.go** - File system watcher for hot-reload of config changes
 - **internal/tracker/lock.go** - File-based locking preventing concurrent runs
+- **internal/tracker/run_state.go** - Run state persistence for crash recovery
 - **internal/resilience/circuit_breaker.go** - Fault tolerance with exponential backoff
 
 ## Development
