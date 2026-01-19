@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/chr1sbest/wiggum/internal/agent"
 )
@@ -36,6 +37,21 @@ type Writer struct {
 	w            io.Writer
 	mu           sync.Mutex
 	linesWritten int
+	startTime    time.Time
+}
+
+// animatedDots returns a cycling dot pattern based on elapsed time
+func animatedDots() string {
+	ms := time.Now().UnixMilli()
+	phase := (ms / 500) % 3 // cycle every 500ms through 3 phases
+	switch phase {
+	case 0:
+		return "."
+	case 1:
+		return ".."
+	default:
+		return "..."
+	}
 }
 
 // New creates a status writer that outputs to stdout
@@ -104,6 +120,7 @@ func (s *Writer) StepWithRetry(loopNum, stepNum, totalSteps int, stepName string
 		current = prdStatus.CurrentTask
 	}
 	bar := progressBar(completed, total)
+	dots := animatedDots()
 
 	_ = loopNum
 	_ = stepNum
@@ -112,16 +129,25 @@ func (s *Writer) StepWithRetry(loopNum, stepNum, totalSteps int, stepName string
 	_ = attempt
 	_ = maxRetries
 
-	var line string
+	var lines []string
 	if current != "" {
-		line = fmt.Sprintf("%s %s%d/%d%s %s%s%s", bar, dim, completed, total, reset, bold, current, reset)
+		lines = []string{
+			fmt.Sprintf("%s %s%d/%d%s %s%s%s", bar, dim, completed, total, reset, bold, current, reset),
+			fmt.Sprintf("%s%sWorking%s%s", green, bold, dots, reset),
+		}
 	} else if completed == total && total > 0 {
-		line = fmt.Sprintf("%s %s%d/%d%s %sWrapping up..%s", bar, dim, completed, total, reset, dim, reset)
+		lines = []string{
+			fmt.Sprintf("%s %s%d/%d%s", bar, dim, completed, total, reset),
+			fmt.Sprintf("%s%sWrapping up%s%s", green, bold, dots, reset),
+		}
 	} else {
-		line = fmt.Sprintf("%s %s%d/%d%s", bar, dim, completed, total, reset)
+		lines = []string{
+			fmt.Sprintf("%s %s%d/%d%s", bar, dim, completed, total, reset),
+			fmt.Sprintf("%s%sWorking%s%s", green, bold, dots, reset),
+		}
 	}
 
-	s.Update(line)
+	s.Update(lines...)
 }
 
 // Complete shows completion status
