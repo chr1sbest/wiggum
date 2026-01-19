@@ -221,14 +221,19 @@ Contributions welcome! Here's how to get started:
 
 ```bash
 # Run tests
-go test ./...
+make test
 
 # Format code
-go fmt ./...
+make fmt
+
+# Run all CI checks (tests + format check)
+make ci
 
 # Install locally for testing
-go install ./cmd/ralph
+make install
 ```
+
+We provide a Makefile for common dev tasks. Run `make help` to see all available targets.
 
 **Key directories:**
 - `cmd/ralph/` - CLI entry point and command routing

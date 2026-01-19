@@ -62,7 +62,7 @@
       "title": "Add Makefile for dev commands",
       "details": "Create Makefile with targets: test (go test ./...), fmt (gofmt -w .), lint (golangci-lint run if available), build (go build ./cmd/ralph), and ci (runs test + fmt check). Update CONTRIBUTING.md to reference these make targets.",
       "priority": "medium",
-      "status": "todo",
+      "status": "done",
       "tests": "make test, make fmt, make build all execute successfully; CONTRIBUTING.md references Makefile"
     },
     {

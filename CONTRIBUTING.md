@@ -14,7 +14,8 @@ cd wiggum
 ### 2. Install Locally
 
 ```bash
-go install ./cmd/ralph
+make install
+# Or directly: go install ./cmd/ralph
 ```
 
 This builds and installs `ralph` to your `$GOPATH/bin` (which should be on your `PATH`).
@@ -22,23 +23,51 @@ This builds and installs `ralph` to your `$GOPATH/bin` (which should be on your 
 ### 3. Run Tests
 
 ```bash
-go test ./...
+make test
+# Or directly: go test ./...
 ```
 
 ### 4. Format Code
 
 ```bash
-go fmt ./...
+make fmt
+# Or directly: go fmt ./...
 ```
 
+### 5. Run All CI Checks
+
+Before submitting a PR, run:
+
+```bash
+make ci
+```
+
+This runs all tests and checks that code is properly formatted (same checks that CI runs).
+
 ## Development Workflow
+
+### Using Make Commands
+
+We provide a Makefile for common development tasks:
+
+```bash
+make help       # Show all available commands
+make test       # Run all tests
+make fmt        # Format all code
+make lint       # Run linter (golangci-lint or go vet)
+make build      # Build the ralph binary
+make ci         # Run all CI checks locally
+make install    # Install ralph to GOPATH/bin
+make clean      # Remove build artifacts
+```
 
 ### Running Tests
 
 Run all tests before submitting a PR:
 
 ```bash
-go test ./...
+make test
+# Or directly: go test ./...
 ```
 
 For verbose output:
@@ -57,7 +86,7 @@ go test ./internal/loop
 
 We follow standard Go conventions:
 
-- Run `go fmt ./...` before committing
+- Run `make fmt` before committing
 - Use `gofmt` style (tabs for indentation, standard formatting)
 - Follow [Effective Go](https://golang.org/doc/effective_go.html) guidelines
 - Keep functions focused and reasonably sized
@@ -74,15 +103,20 @@ We follow standard Go conventions:
 
 3. **Run tests** to ensure nothing broke:
    ```bash
-   go test ./...
+   make test
    ```
 
 4. **Format your code**:
    ```bash
-   go fmt ./...
+   make fmt
    ```
 
-5. **Commit your changes** with a clear message:
+5. **Run CI checks** to catch any issues:
+   ```bash
+   make ci
+   ```
+
+6. **Commit your changes** with a clear message:
    ```bash
    git commit -m "Add feature: description of what you did"
    ```

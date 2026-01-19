@@ -16,11 +16,11 @@ type Task struct {
 
 // FixPlanStatus holds the parsed state of @fix_plan.md
 type FixPlanStatus struct {
-	TotalTasks     int
-	CompletedTasks int
+	TotalTasks      int
+	CompletedTasks  int
 	IncompleteTasks int
-	NextTask       string
-	Tasks          []Task
+	NextTask        string
+	Tasks           []Task
 }
 
 var (

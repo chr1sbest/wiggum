@@ -237,13 +237,13 @@ func TestRunRalphApproach_ResultStructure(t *testing.T) {
 
 func TestParseClaudeOutput(t *testing.T) {
 	tests := []struct {
-		name        string
-		content     string
-		want        *ClaudeOutput
-		wantErr     bool
+		name    string
+		content string
+		want    *ClaudeOutput
+		wantErr bool
 	}{
 		{
-			name: "valid JSON output",
+			name:    "valid JSON output",
 			content: `{"input_tokens": 1234, "output_tokens": 5678, "total_cost_usd": 0.123}`,
 			want: &ClaudeOutput{
 				InputTokens:  1234,
@@ -286,7 +286,7 @@ Some trailing text`,
 			wantErr: false,
 		},
 		{
-			name: "zero values",
+			name:    "zero values",
 			content: `{"input_tokens": 0, "output_tokens": 0, "total_cost_usd": 0}`,
 			want: &ClaudeOutput{
 				InputTokens:  0,
