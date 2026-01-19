@@ -38,7 +38,7 @@
       "title": "Add Contributing section to README",
       "details": "Add a 'Contributing (5 min quickstart)' section near bottom of README.md with: go test ./..., go fmt ./..., local install command, and brief pointer to internal/ and cmd/ralph/ as core logic locations.",
       "priority": "high",
-      "status": "todo",
+      "status": "done",
       "tests": "README.md contains Contributing section with quickstart commands and directory pointers"
     },
     {
