@@ -118,7 +118,7 @@
       "title": "Ensure evals/results/ is gitignored",
       "details": "Add evals/results/ to .gitignore if not already present. Create the directory if it doesn't exist. Ensure result JSON files are not committed.",
       "priority": "low",
-      "status": "todo",
+      "status": "done",
       "tests": "evals/results/ in .gitignore; git status does not show result JSON files as untracked"
     },
     {
