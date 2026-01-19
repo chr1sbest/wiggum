@@ -22,7 +22,7 @@
       "title": "Add CODE_OF_CONDUCT.md",
       "details": "Create CODE_OF_CONDUCT.md using the Contributor Covenant template (https://www.contributor-covenant.org/). Use version 2.1 which is the current standard.",
       "priority": "high",
-      "status": "todo",
+      "status": "done",
       "tests": "CODE_OF_CONDUCT.md exists with Contributor Covenant content"
     },
     {
