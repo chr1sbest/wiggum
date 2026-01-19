@@ -2,6 +2,30 @@
   "version": 1,
   "tasks": [
     {
+      "id": "T213",
+      "title": "Upgrade Go version to fix vulnerabilities",
+      "details": "Update go.mod to require Go 1.24.11 or later to resolve all 16 standard library vulnerabilities detected by govulncheck. The vulnerabilities affect crypto/x509, net/http, encoding/asn1, net/url, encoding/pem, crypto/tls, os/exec, and syscall packages. Update go.mod with 'go 1.24' directive and run 'go mod tidy' to ensure compatibility.",
+      "priority": "high",
+      "status": "done",
+      "tests": "Running 'govulncheck ./...' shows no vulnerabilities; CI passes with updated Go version",
+      "issue": {
+        "number": 13,
+        "url": "https://github.com/chr1sbest/wiggum/issues/13"
+      }
+    },
+    {
+      "id": "T214",
+      "title": "Update CI workflow Go version",
+      "details": "Update .github/workflows/ CI configuration to use Go 1.24.x to match the updated go.mod requirement. Ensure all workflow files that specify a Go version are updated consistently.",
+      "priority": "high",
+      "status": "todo",
+      "tests": "CI workflow uses Go 1.24.x; all CI jobs pass successfully",
+      "issue": {
+        "number": 13,
+        "url": "https://github.com/chr1sbest/wiggum/issues/13"
+      }
+    },
+    {
       "id": "T200",
       "title": "Add LICENSE file (MIT)",
       "details": "Create LICENSE file in repository root with MIT license text. Include current year and project name.",
