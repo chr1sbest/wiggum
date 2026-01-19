@@ -94,7 +94,7 @@
       "title": "Enhance ARCHITECTURE.md for contributors",
       "details": "Update existing ARCHITECTURE.md to include: 'where to change what' map for common modifications, entrypoint flow explanation, config/prompts locations, and safety guardrails documentation (loop limits, unsafe mode implications).",
       "priority": "low",
-      "status": "todo",
+      "status": "done",
       "tests": "ARCHITECTURE.md includes contributor-focused 'where to change what' section"
     },
     {
