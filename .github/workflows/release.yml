@@ -44,7 +44,7 @@ jobs:
           cache: true
 
       - name: Run tests
-        run: go test ./cmd/ralph/...
+        run: go test ./...
 
       - name: Build
         env:
