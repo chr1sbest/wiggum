@@ -120,6 +120,23 @@ Options:
 
 The PR body is auto-generated from `.ralph/prd.json`, listing completed tasks and any linked GitHub issues.
 
+### Run evaluations
+
+Use `eval` to run evaluation suites and compare ralph vs oneshot approaches:
+
+```bash
+# List available evaluation suites
+ralph eval list
+
+# Run an evaluation suite
+ralph eval run flask --approach ralph
+
+# Compare results between approaches
+ralph eval compare flask
+```
+
+Evaluation suites are defined in `evals/suites/` and results are saved to `evals/results/`.
+
 ## Development
 
 ### Installation from source

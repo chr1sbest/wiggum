@@ -32,6 +32,8 @@ func main() {
 		os.Exit(prCmd(os.Args[2:]))
 	case "upgrade":
 		os.Exit(upgradeCmd(os.Args[2:]))
+	case "eval":
+		os.Exit(evalCmd(os.Args[2:]))
 	case "version":
 		fmt.Println(versionLine())
 	case "help", "-h", "--help":
@@ -58,6 +60,7 @@ Commands:
   add          Add more work for Ralph to think about
   fix          Create tasks from a GitHub issue
   pr           Push branch and open a pull request
+  eval         Run evaluation suites against ralph and oneshot approaches
   upgrade      Check for updates and upgrade Ralph
   version      Show Ralph's version number
   help         Show this message again (I like explaining)

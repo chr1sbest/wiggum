@@ -1,0 +1,13 @@
+name: tasktracker
+description: REST API with JWT auth, 4 models, ~15 endpoints
+requirements: examples/task_tracker_requirements.md
+language: python
+timeout: 2h
+
+setup:
+  - python3 -m venv venv
+  - source venv/bin/activate && pip install -r requirements.txt
+
+tests:
+  shared:
+    - source venv/bin/activate && pytest evals/suites/tasktracker/tests/ -v
