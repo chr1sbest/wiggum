@@ -51,29 +51,52 @@ if [ -z "$SUITE" ] || [ -z "$APPROACH" ]; then
     exit 1
 fi
 
-# Map suite to requirements file
-case "$SUITE" in
-    logagg)
-        REQUIREMENTS="$WIGGUM_DIR/examples/log_aggregator_requirements.md"
-        ;;
-    tasktracker)
-        REQUIREMENTS="$WIGGUM_DIR/examples/task_tracker_requirements.md"
-        ;;
-    flask)
-        REQUIREMENTS="$WIGGUM_DIR/examples/flask_requirements.md"
-        ;;
-    *)
-        echo "Error: Unknown suite '$SUITE'"
+# Map suite to requirements file and test script
+SUITE_DIR="$SCRIPT_DIR/suites/$SUITE"
+SUITE_YAML="$SUITE_DIR/suite.yaml"
+
+# Try to read from suite.yaml first
+if [ -f "$SUITE_YAML" ]; then
+    # Parse requirements path from suite.yaml
+    REQUIREMENTS_REL=$(grep "^requirements:" "$SUITE_YAML" | head -1 | sed 's/^requirements:[[:space:]]*//')
+    if [ -z "$REQUIREMENTS_REL" ]; then
+        echo "Error: Could not parse requirements from $SUITE_YAML"
         exit 1
-        ;;
-esac
+    fi
+    REQUIREMENTS="$WIGGUM_DIR/$REQUIREMENTS_REL"
+
+    # Parse test command from suite.yaml (first shared test)
+    TEST_SCRIPT=$(grep -A 10 "^tests:" "$SUITE_YAML" | grep -A 10 "shared:" | grep "^[[:space:]]*-" | head -1 | sed 's/^[[:space:]]*-[[:space:]]*//')
+
+else
+    # Fallback to hardcoded paths for backwards compatibility
+    echo "Note: suite.yaml not found at $SUITE_YAML, using hardcoded configuration"
+
+    case "$SUITE" in
+        logagg)
+            REQUIREMENTS="$WIGGUM_DIR/examples/log_aggregator_requirements.md"
+            TEST_SCRIPT="evals/suites/logagg/run_tests.sh"
+            ;;
+        tasktracker)
+            REQUIREMENTS="$WIGGUM_DIR/examples/task_tracker_requirements.md"
+            TEST_SCRIPT=""
+            ;;
+        flask)
+            REQUIREMENTS="$WIGGUM_DIR/examples/flask_requirements.md"
+            TEST_SCRIPT=""
+            ;;
+        *)
+            echo "Error: Unknown suite '$SUITE'"
+            exit 1
+            ;;
+    esac
+fi
 
 if [ ! -f "$REQUIREMENTS" ]; then
     echo "Error: Requirements file not found: $REQUIREMENTS"
     exit 1
 fi
 
-SUITE_DIR="$SCRIPT_DIR/suites/$SUITE"
 if [ ! -d "$SUITE_DIR" ]; then
     echo "Warning: No test suite found at $SUITE_DIR"
 fi
@@ -201,14 +224,47 @@ TESTS_PASSED=0
 TESTS_FAILED=0
 TESTS_TOTAL=0
 
-if [ -f "$SUITE_DIR/run_tests.sh" ]; then
+# Determine how to run tests
+if [ -n "$TEST_SCRIPT" ]; then
     echo ""
     echo "=== Running Test Suite ==="
     echo ""
-    
+
+    # Check if TEST_SCRIPT is a path to a shell script
+    if [[ "$TEST_SCRIPT" == *".sh"* ]]; then
+        # Treat as a script path
+        if [[ "$TEST_SCRIPT" != /* ]]; then
+            TEST_SCRIPT_PATH="$WIGGUM_DIR/$TEST_SCRIPT"
+        else
+            TEST_SCRIPT_PATH="$TEST_SCRIPT"
+        fi
+
+        if [ -f "$TEST_SCRIPT_PATH" ]; then
+            # Run the test script
+            "$TEST_SCRIPT_PATH" "$PROJECT_DIR" || true
+        else
+            echo "⚠️  Test script not found: $TEST_SCRIPT_PATH"
+        fi
+    else
+        # Treat as a command to execute
+        eval "$TEST_SCRIPT" || true
+    fi
+
+    # Read results if available
+    if [ -f ".eval_results.json" ]; then
+        TESTS_PASSED=$(grep -oE '"passed"[[:space:]]*:[[:space:]]*[0-9]+' .eval_results.json | grep -oE '[0-9]+' || echo "0")
+        TESTS_FAILED=$(grep -oE '"failed"[[:space:]]*:[[:space:]]*[0-9]+' .eval_results.json | grep -oE '[0-9]+' || echo "0")
+        TESTS_TOTAL=$(grep -oE '"total"[[:space:]]*:[[:space:]]*[0-9]+' .eval_results.json | grep -oE '[0-9]+' || echo "0")
+    fi
+elif [ -f "$SUITE_DIR/run_tests.sh" ]; then
+    # Fallback to legacy location
+    echo ""
+    echo "=== Running Test Suite ==="
+    echo ""
+
     # Run the test suite
     "$SUITE_DIR/run_tests.sh" "$PROJECT_DIR" || true
-    
+
     # Read results if available
     if [ -f ".eval_results.json" ]; then
         TESTS_PASSED=$(grep -oE '"passed"[[:space:]]*:[[:space:]]*[0-9]+' .eval_results.json | grep -oE '[0-9]+' || echo "0")
