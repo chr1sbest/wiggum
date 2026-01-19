@@ -120,6 +120,54 @@ Options:
 
 The PR body is auto-generated from `.ralph/prd.json`, listing completed tasks and any linked GitHub issues.
 
+## Commands
+
+| Command | Purpose | Key Flags |
+|---------|---------|-----------|
+| `ralph init [requirements.md]` | Initialize project with generated task list | `-requirements`, `-model` |
+| `ralph run` | Execute the autonomous loop | None |
+| `ralph add <work>` | Add new work items to PRD | `-file`, `-desc`, `-model` |
+| `ralph fix --issue N` | Create tasks from GitHub issue | `--issue`, `--repo`, `-model` |
+| `ralph pr` | Push branch and open PR with auto-generated summary | `--title`, `--draft`, `--base` |
+| `ralph upgrade` | Check for updates and upgrade Ralph | `-yes` |
+| `ralph version` | Show Ralph's version number | None |
+
+For detailed help on any command, run `ralph <command> -h`.
+
+## Architecture
+
+```
+cmd/ralph/           # CLI entry point and commands
+internal/
+├── loop/            # Loop execution engine with pluggable steps
+│   └── steps/       # Step implementations (agent, git-commit, command, readme-check, noop)
+├── agent/           # Session and PRD management
+├── banner/          # Welcome banner display
+├── config/          # JSON config loading with hot-reload
+├── tracker/         # Run state, metrics, and file locking
+├── resilience/      # Circuit breaker and retry logic
+├── status/          # Terminal UI progress display
+└── logger/          # Structured logging
+configs/             # Default configuration templates
+examples/            # Sample requirements files
+evals/               # Evaluation/testing framework
+```
+
+### Key Components
+
+- **cmd/ralph/main.go** - CLI dispatcher routing commands (run, init, add, fix, pr, upgrade)
+- **internal/loop/loop.go** - Core loop orchestrator executing steps iteratively
+- **internal/loop/step.go** - Step interface and registry for pluggable step types
+- **internal/loop/steps/agent.go** - Claude Code invocation step with exit detection
+- **internal/agent/prd_status.go** - PRD task parsing (todo → in_progress → done → failed)
+- **internal/agent/session.go** - Session persistence with auto-expiry and transition history
+- **internal/agent/fixplan.go** - Fix plan parsing for GitHub issue task tracking
+- **internal/config/loader.go** - Configuration management with JSON config files
+- **internal/config/watcher.go** - File system watcher for hot-reload of config changes
+- **internal/tracker/lock.go** - File-based locking preventing concurrent runs
+- **internal/tracker/run_state.go** - Run state persistence for crash recovery
+- **internal/resilience/circuit_breaker.go** - Fault tolerance with exponential backoff
+
 ## Development
 
 ### Installation from source
@@ -163,6 +211,140 @@ your-project/
 │   └── .ralph_lock           # Prevents concurrent runs
 ├── your code files...        # Application code goes here
 └── README.md
+```
+
+### Task Statuses
+
+Tasks in `prd.json` progress through these statuses:
+
+- **`todo`** - Task has not been started yet
+- **`in_progress`** - Task is currently being worked on
+- **`done`** - Task completed successfully
+- **`failed`** - Task exceeded max_loops_per_task without completion
+
+Ralph automatically picks the first `todo` task and moves it through these states. If a task takes too many loop iterations without completing, it's marked as `failed` to prevent infinite loops.
+
+### Session Management
+
+Ralph maintains session persistence to optimize Claude Code interactions and provide crash recovery:
+
+#### Session Persistence (`.ralph_session`)
+
+Ralph tracks Claude Code sessions across loop iterations to maintain context continuity:
+
+- **Session tracking:** Each session has a unique ID, creation timestamp, and loop count
+- **Auto-expiry:** Sessions expire after a configurable period (default: 24 hours) to prevent context staleness
+- **Fresh starts:** When a session expires, Ralph creates a new session ID and resets the exit detector
+- **Session history:** Session transitions are logged to `.ralph_session_history` (last 50 transitions kept)
+
+This allows Ralph to maintain context across related work while automatically resetting when appropriate. The session file is configured per-step in `.ralph/configs/default.json` via the `session_file` parameter.
+
+#### Run State Persistence (`.ralph/run_state.json`)
+
+Ralph maintains detailed run state for crash recovery and monitoring:
+
+- **Process tracking:** Records PID, run ID, start time, and last update timestamp
+- **Step tracking:** Tracks current step name, step start time, and last successful step
+- **Task tracking:** Records current task ID and description being worked on
+- **Error tracking:** Stores last error message for debugging failed runs
+- **Atomic writes:** Uses temporary files with atomic rename to prevent corruption
+
+If Ralph crashes or is killed, the run state file contains enough information to understand what was being worked on and where the failure occurred. The loop number and current step help identify exactly where execution stopped.
+
+### Per-Step Resilience Configuration
+
+Ralph's loop steps can be configured with fine-grained resilience settings to handle failures gracefully. Each step in `.ralph/configs/default.json` supports the following configuration options:
+
+#### StepConfig Schema
+
+```json
+{
+  "type": "agent",
+  "name": "run-claude",
+  "timeout": "20m",
+  "max_retries": 1,
+  "retry_delay": "30s",
+  "continue_on_error": false,
+  "circuit_breaker": {
+    "threshold": 3,
+    "reset_after": "5m"
+  },
+  "config": {
+    // Step-specific configuration
+  }
+}
+```
+
+#### Resilience Options
+
+- **`timeout`** - Maximum duration for step execution (e.g., "30s", "5m", "20m")
+  - If a step exceeds this timeout, it will be terminated
+  - Default: No timeout
+
+- **`max_retries`** - Number of retry attempts if the step fails (0 = no retries)
+  - Each retry uses exponential backoff based on `retry_delay`
+  - Default: 0
+
+- **`retry_delay`** - Initial delay between retry attempts (e.g., "1s", "500ms", "30s")
+  - Subsequent retries use exponential backoff: 1x, 2x, 4x, etc.
+  - Default: 1 second
+
+- **`continue_on_error`** - Whether to proceed to next step even if this step fails
+  - Useful for optional steps like git commits that shouldn't block the loop
+  - Default: false (stop on error)
+
+- **`circuit_breaker`** - Circuit breaker configuration to prevent cascading failures
+  - **`threshold`** - Number of consecutive failures before opening the circuit
+  - **`reset_after`** - Duration to wait before attempting to close the circuit (e.g., "30s", "5m")
+  - When the circuit is open, the step is skipped to prevent repeated failures
+  - After `reset_after` duration, the circuit enters "half-open" state and tries one execution
+  - Default: No circuit breaker
+
+#### Example Configuration
+
+Here's an example showing different resilience patterns for different step types:
+
+```json
+{
+  "name": "resilient-loop",
+  "max_loops_per_task": 10,
+  "steps": [
+    {
+      "type": "agent",
+      "name": "run-claude",
+      "timeout": "20m",
+      "max_retries": 1,
+      "retry_delay": "30s",
+      "circuit_breaker": {
+        "threshold": 3,
+        "reset_after": "5m"
+      },
+      "config": {
+        "prompt_file": ".ralph/prompts/LOOP_PROMPT.md",
+        "prd_file": ".ralph/prd.json"
+      }
+    },
+    {
+      "type": "git-commit",
+      "name": "commit-progress",
+      "continue_on_error": true,
+      "config": {
+        "enabled": true,
+        "repo_dir": "."
+      }
+    },
+    {
+      "type": "command",
+      "name": "run-tests",
+      "timeout": "10m",
+      "max_retries": 2,
+      "retry_delay": "10s",
+      "config": {
+        "command": ["go", "test", "./..."]
+      }
+    }
+  ]
+}
 ```
 
 ## FAQ
