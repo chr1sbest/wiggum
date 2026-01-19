@@ -86,7 +86,7 @@
       "title": "Create tasktracker pytest fixtures",
       "details": "Create evals/suites/tasktracker/tests/conftest.py with pytest fixtures for API testing. Include: base_url fixture (default localhost:8000), auth_headers fixture that registers a user and returns JWT token, api_client fixture using requests session.",
       "priority": "medium",
-      "status": "todo",
+      "status": "done",
       "tests": "conftest.py exists with base_url, auth_headers, and api_client fixtures; pytest can import fixtures"
     },
     {
