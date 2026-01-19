@@ -126,7 +126,7 @@
       "title": "Update evals README documentation",
       "details": "Update evals/README.md to document: new suite.yaml format, ralph eval CLI usage (list, run, compare), result JSON schema, how to add a new suite. Include examples.",
       "priority": "low",
-      "status": "todo",
+      "status": "done",
       "tests": "README.md documents suite.yaml format, ralph eval commands, and how to add new suites"
     }
   ]
