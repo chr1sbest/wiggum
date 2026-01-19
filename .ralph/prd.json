@@ -78,7 +78,7 @@
       "title": "Update cmd_eval.go to use Go runner",
       "details": "Modify cmd/ralph/cmd_eval.go to: 1) Replace exec.Command call to run.sh with eval.Run() in evalRunCmd, 2) Replace exec.Command call to compare_evals.sh with eval.Compare() in evalCompareCmd, 3) Remove shell script path construction. Keep all existing flag parsing and validation logic.",
       "priority": "high",
-      "status": "todo",
+      "status": "done",
       "tests": "'ralph eval run flask --approach ralph' uses Go runner; 'ralph eval compare flask' uses Go comparison"
     },
     {

@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"os/exec"
 	"path/filepath"
 
 	"github.com/chr1sbest/wiggum/internal/eval"
@@ -204,22 +203,11 @@ Examples:
 		return 1
 	}
 
-	// Call evals/run.sh with the suite name and flags
-	script := "./evals/run.sh"
-	cmdArgs := []string{suite, *approach}
-	if *model != "" {
-		cmdArgs = append(cmdArgs, *model)
-	}
+	// Create config and run evaluation using Go implementation
+	config := eval.NewRunConfig(suite, *approach, *model)
 
-	cmd := exec.Command(script, cmdArgs...)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	cmd.Stdin = os.Stdin
-
-	if err := cmd.Run(); err != nil {
-		if exitErr, ok := err.(*exec.ExitError); ok {
-			return exitErr.ExitCode()
-		}
+	_, err := eval.Run(config)
+	if err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to run evaluation: %v\n", err)
 		return 1
 	}
@@ -230,11 +218,16 @@ Examples:
 func evalCompareCmd(args []string) int {
 	fs := flag.NewFlagSet("eval compare", flag.ContinueOnError)
 	fs.SetOutput(io.Discard)
+	model := fs.String("model", "sonnet", "Claude model to compare (default \"sonnet\")")
+
 	fs.Usage = func() {
 		fmt.Print(`eval compare 📊  Compare ralph vs oneshot results
 
 Usage:
-  ralph eval compare <suite>
+  ralph eval compare <suite> [flags]
+
+Flags:
+  --model string       Claude model to compare (default "sonnet")
 
 Description:
   Compares the most recent ralph and oneshot evaluation results for the
@@ -242,7 +235,7 @@ Description:
 
 Examples:
   ralph eval compare flask
-  ralph eval compare logagg
+  ralph eval compare logagg --model opus
 `)
 	}
 
@@ -277,19 +270,8 @@ Examples:
 		return 1
 	}
 
-	// Call evals/compare_evals.sh with the suite name
-	script := "./evals/compare_evals.sh"
-	cmd := exec.Command(script, suite)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	cmd.Stdin = os.Stdin
-
-	if err := cmd.Run(); err != nil {
-		// Check if it's a "no results found" error by examining stderr
-		// For now, just return the exit code
-		if exitErr, ok := err.(*exec.ExitError); ok {
-			return exitErr.ExitCode()
-		}
+	// Use Go implementation to compare results
+	if err := eval.Compare(suite, *model); err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to compare evaluations: %v\n", err)
 		return 1
 	}
