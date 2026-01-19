@@ -94,7 +94,7 @@
       "title": "Create tasktracker auth tests",
       "details": "Create evals/suites/tasktracker/tests/test_auth.py with 5-7 tests covering: user registration, login returns JWT, invalid credentials rejected, protected routes require auth, token refresh if applicable. Tests should be implementation-agnostic.",
       "priority": "medium",
-      "status": "todo",
+      "status": "done",
       "tests": "test_auth.py contains at least 5 test functions; tests validate API contract not implementation details"
     },
     {
