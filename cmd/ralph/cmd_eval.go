@@ -151,7 +151,29 @@ Examples:
 `)
 	}
 
-	if err := fs.Parse(args); err != nil {
+	// Reorder args: move flags before positional args so flag.Parse works correctly
+	// Go's flag package stops at first non-flag argument
+	var reordered []string
+	var positional []string
+	for i := 0; i < len(args); i++ {
+		if len(args[i]) > 0 && args[i][0] == '-' {
+			reordered = append(reordered, args[i])
+			// If it's a flag that takes a value, grab the next arg too
+			if i+1 < len(args) && len(args[i+1]) > 0 && args[i+1][0] != '-' {
+				// Check if it's a known flag that takes a value
+				if args[i] == "-approach" || args[i] == "--approach" ||
+					args[i] == "-model" || args[i] == "--model" {
+					i++
+					reordered = append(reordered, args[i])
+				}
+			}
+		} else {
+			positional = append(positional, args[i])
+		}
+	}
+	reordered = append(reordered, positional...)
+
+	if err := fs.Parse(reordered); err != nil {
 		if errors.Is(err, flag.ErrHelp) {
 			fs.Usage()
 			return 0
