@@ -62,7 +62,7 @@
       "title": "Create cmd_eval.go with eval subcommands",
       "details": "Create cmd/ralph/cmd_eval.go implementing evalCmd() that routes to: 'run' (calls evals/run.sh with args), 'compare' (calls evals/compare_evals.sh), 'list' (discovers suites by scanning evals/suites/*/suite.yaml). Parse flags: --approach, --model for run subcommand.",
       "priority": "high",
-      "status": "todo",
+      "status": "done",
       "tests": "ralph eval list shows available suites; ralph eval run flask --approach ralph executes run.sh; ralph eval compare flask executes compare_evals.sh"
     },
     {
