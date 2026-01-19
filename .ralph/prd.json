@@ -78,7 +78,7 @@
       "title": "Improve comparison table output format",
       "details": "Update evals/compare_evals.sh to print a formatted ASCII table with box-drawing characters. Show columns: Metric, Ralph, Oneshot, Winner. Include percentage difference in Winner column. Add summary line at bottom.",
       "priority": "medium",
-      "status": "todo",
+      "status": "done",
       "tests": "Running compare_evals.sh produces formatted table matching spec with Duration, Total Tokens, Cost, Shared Tests rows and percentage differences"
     },
     {
