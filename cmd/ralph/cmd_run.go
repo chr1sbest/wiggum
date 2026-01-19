@@ -31,7 +31,6 @@ func runCmd(args []string) int {
 	}
 	fs := flag.NewFlagSet("run", flag.ExitOnError)
 	configFile := fs.String("config", ".ralph/configs/default.json", "Path to config file")
-	logFile := fs.String("log", ".ralph/ralph.log", "Path to log file")
 	model := fs.String("model", "", "Claude model to use (overrides agent step config)")
 	once := fs.Bool("once", false, "Run loop only once")
 	fs.Parse(args)
@@ -66,12 +65,7 @@ func runCmd(args []string) int {
 		return 0
 	}
 
-	fileLogger, err := logger.NewFileLogger(*logFile, logger.LevelDebug)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to create file logger: %v\n", err)
-		return 1
-	}
-	defer fileLogger.Close()
+	loopLogger := logger.NewNoopLogger()
 
 	registry := loop.NewStepRegistry()
 	registry.Register("command", func() loop.Step { return steps.NewCommandStep() })
@@ -119,7 +113,7 @@ func runCmd(args []string) int {
 	b := banner.New()
 	b.Print(cfg)
 
-	mainLoop := loop.NewLoop(cfg, registry, fileLogger)
+	mainLoop := loop.NewLoop(cfg, registry, loopLogger)
 	mainLoop.SetPRDPath(".ralph/prd.json")
 
 	trackerDir := ".ralph"

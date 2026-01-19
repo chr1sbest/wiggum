@@ -153,6 +153,23 @@ func (l *FileLogger) Close() error {
 	return l.file.Close()
 }
 
+// NoopLogger is a logger that discards all logs.
+type NoopLogger struct{}
+
+// NewNoopLogger creates a logger that discards all output.
+func NewNoopLogger() *NoopLogger {
+	return &NoopLogger{}
+}
+
+func (n *NoopLogger) Debug(msg string, fields ...Field) {}
+func (n *NoopLogger) Info(msg string, fields ...Field)  {}
+func (n *NoopLogger) Warn(msg string, fields ...Field)  {}
+func (n *NoopLogger) Error(msg string, fields ...Field) {}
+
+func (n *NoopLogger) WithFields(fields ...Field) Logger {
+	return n
+}
+
 // MultiLogger composes multiple loggers together.
 type MultiLogger struct {
 	loggers []Logger
