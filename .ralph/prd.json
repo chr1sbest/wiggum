@@ -70,7 +70,7 @@
       "title": "Ensure CI matches Makefile targets",
       "details": "Review and update .github/workflows/ to ensure CI runs: go test ./..., format check, and optionally govulncheck. CI commands should match what's in Makefile so contributors can run 'make ci' locally.",
       "priority": "medium",
-      "status": "todo",
+      "status": "done",
       "tests": "CI workflow runs same checks as make ci; contributor can replicate CI locally"
     },
     {
