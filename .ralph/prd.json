@@ -86,7 +86,7 @@
       "title": "Add eval runner unit tests",
       "details": "Create internal/eval/runner_test.go with tests for: 1) RunConfig validation, 2) Project directory creation/cleanup, 3) Result JSON marshaling/unmarshaling, 4) Code metrics collection, 5) Pytest output parsing. Use table-driven tests and test fixtures.",
       "priority": "medium",
-      "status": "todo",
+      "status": "done",
       "tests": "go test ./internal/eval/... passes with \u003e80% coverage on new code"
     },
     {

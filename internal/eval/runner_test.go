@@ -234,3 +234,206 @@ func TestRunRalphApproach_ResultStructure(t *testing.T) {
 		t.Errorf("TotalTokens = %d, want 18412595", result.TotalTokens)
 	}
 }
+
+func TestParseClaudeOutput(t *testing.T) {
+	tests := []struct {
+		name        string
+		content     string
+		want        *ClaudeOutput
+		wantErr     bool
+	}{
+		{
+			name: "valid JSON output",
+			content: `{"input_tokens": 1234, "output_tokens": 5678, "total_cost_usd": 0.123}`,
+			want: &ClaudeOutput{
+				InputTokens:  1234,
+				OutputTokens: 5678,
+				TotalCostUSD: 0.123,
+			},
+			wantErr: false,
+		},
+		{
+			name: "JSON with other text before",
+			content: `Some preamble text
+{"input_tokens": 100, "output_tokens": 200, "total_cost_usd": 0.01}`,
+			want: &ClaudeOutput{
+				InputTokens:  100,
+				OutputTokens: 200,
+				TotalCostUSD: 0.01,
+			},
+			wantErr: false,
+		},
+		{
+			name: "JSON with other text after",
+			content: `{"input_tokens": 100, "output_tokens": 200, "total_cost_usd": 0.01}
+Some trailing text`,
+			want: &ClaudeOutput{
+				InputTokens:  100,
+				OutputTokens: 200,
+				TotalCostUSD: 0.01,
+			},
+			wantErr: false,
+		},
+		{
+			name: "multiple JSON lines - takes last",
+			content: `{"input_tokens": 50, "output_tokens": 50, "total_cost_usd": 0.005}
+{"input_tokens": 100, "output_tokens": 200, "total_cost_usd": 0.01}`,
+			want: &ClaudeOutput{
+				InputTokens:  100,
+				OutputTokens: 200,
+				TotalCostUSD: 0.01,
+			},
+			wantErr: false,
+		},
+		{
+			name: "zero values",
+			content: `{"input_tokens": 0, "output_tokens": 0, "total_cost_usd": 0}`,
+			want: &ClaudeOutput{
+				InputTokens:  0,
+				OutputTokens: 0,
+				TotalCostUSD: 0,
+			},
+			wantErr: false,
+		},
+		{
+			name:    "no JSON found",
+			content: `Just some plain text without JSON`,
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name:    "invalid JSON",
+			content: `{invalid json}`,
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name:    "empty content",
+			content: ``,
+			want:    nil,
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Create temp file with content
+			tmpDir := t.TempDir()
+			outputPath := filepath.Join(tmpDir, "output.json")
+
+			if err := os.WriteFile(outputPath, []byte(tt.content), 0644); err != nil {
+				t.Fatalf("failed to write test file: %v", err)
+			}
+
+			// Parse output
+			got, err := parseClaudeOutput(outputPath)
+
+			if (err != nil) != tt.wantErr {
+				t.Errorf("parseClaudeOutput() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			if !tt.wantErr {
+				if got.InputTokens != tt.want.InputTokens {
+					t.Errorf("InputTokens = %d, want %d", got.InputTokens, tt.want.InputTokens)
+				}
+				if got.OutputTokens != tt.want.OutputTokens {
+					t.Errorf("OutputTokens = %d, want %d", got.OutputTokens, tt.want.OutputTokens)
+				}
+				if got.TotalCostUSD != tt.want.TotalCostUSD {
+					t.Errorf("TotalCostUSD = %f, want %f", got.TotalCostUSD, tt.want.TotalCostUSD)
+				}
+			}
+		})
+	}
+}
+
+func TestParseClaudeOutput_FileNotFound(t *testing.T) {
+	_, err := parseClaudeOutput("/nonexistent/path/output.json")
+	if err == nil {
+		t.Error("expected error for non-existent file, got nil")
+	}
+}
+
+func TestClaudeOutputJSON(t *testing.T) {
+	// Test that ClaudeOutput can be marshaled and unmarshaled correctly
+	original := &ClaudeOutput{
+		InputTokens:  1234,
+		OutputTokens: 5678,
+		TotalCostUSD: 0.123,
+	}
+
+	// Marshal to JSON
+	data, err := json.Marshal(original)
+	if err != nil {
+		t.Fatalf("failed to marshal: %v", err)
+	}
+
+	// Unmarshal back
+	var decoded ClaudeOutput
+	if err := json.Unmarshal(data, &decoded); err != nil {
+		t.Fatalf("failed to unmarshal: %v", err)
+	}
+
+	// Compare
+	if decoded.InputTokens != original.InputTokens {
+		t.Errorf("InputTokens mismatch: got %d, want %d", decoded.InputTokens, original.InputTokens)
+	}
+	if decoded.OutputTokens != original.OutputTokens {
+		t.Errorf("OutputTokens mismatch: got %d, want %d", decoded.OutputTokens, original.OutputTokens)
+	}
+	if decoded.TotalCostUSD != original.TotalCostUSD {
+		t.Errorf("TotalCostUSD mismatch: got %f, want %f", decoded.TotalCostUSD, original.TotalCostUSD)
+	}
+}
+
+func TestRunOneshotApproach_ResultStructure(t *testing.T) {
+	// Test that oneshot result has the correct structure
+	startTime := time.Now()
+	claudeOutput := &ClaudeOutput{
+		InputTokens:  1234,
+		OutputTokens: 5678,
+		TotalCostUSD: 0.123,
+	}
+
+	result := &EvalResult{
+		Suite:           "flask",
+		Approach:        ApproachOneshot,
+		Model:           "sonnet",
+		Timestamp:       startTime,
+		DurationSeconds: 45,
+		TotalCalls:      1, // Oneshot always has exactly 1 call
+		InputTokens:     claudeOutput.InputTokens,
+		OutputTokens:    claudeOutput.OutputTokens,
+		TotalTokens:     claudeOutput.InputTokens + claudeOutput.OutputTokens,
+		CostUSD:         claudeOutput.TotalCostUSD,
+		OutputDir:       "/tmp/eval-oneshot-flask-sonnet-1234567890",
+	}
+
+	// Verify all fields are set correctly
+	if result.Suite != "flask" {
+		t.Errorf("Suite = %s, want flask", result.Suite)
+	}
+	if result.Approach != ApproachOneshot {
+		t.Errorf("Approach = %s, want %s", result.Approach, ApproachOneshot)
+	}
+	if result.Model != "sonnet" {
+		t.Errorf("Model = %s, want sonnet", result.Model)
+	}
+	if result.TotalCalls != 1 {
+		t.Errorf("TotalCalls = %d, want 1", result.TotalCalls)
+	}
+	if result.InputTokens != 1234 {
+		t.Errorf("InputTokens = %d, want 1234", result.InputTokens)
+	}
+	if result.OutputTokens != 5678 {
+		t.Errorf("OutputTokens = %d, want 5678", result.OutputTokens)
+	}
+	expectedTotal := 1234 + 5678
+	if result.TotalTokens != expectedTotal {
+		t.Errorf("TotalTokens = %d, want %d", result.TotalTokens, expectedTotal)
+	}
+	if result.CostUSD != 0.123 {
+		t.Errorf("CostUSD = %f, want 0.123", result.CostUSD)
+	}
+}
