@@ -104,25 +104,35 @@ func calcWinner(ralphVal, oneshotVal int, higherIsBetter bool) string {
 		return "Tie"
 	}
 	if oneshotVal == 0 {
-		return "Ralph"
+		return "N/A"
 	}
 	if ralphVal == oneshotVal {
 		return "Tie"
 	}
 
 	// Determine winner based on whether higher or lower is better
+	// Percentage is always calculated as (winner - loser) / winner * 100
 	if higherIsBetter {
+		// For higher is better metrics, show percentage increase
 		if ralphVal > oneshotVal {
-			return fmt.Sprintf("Ralph (+%d)", ralphVal-oneshotVal)
+			// Ralph wins (has higher value)
+			pct := (float64(ralphVal-oneshotVal) / float64(oneshotVal)) * 100
+			return fmt.Sprintf("Ralph +%.2f%%", pct)
 		}
-		return fmt.Sprintf("Oneshot (+%d)", oneshotVal-ralphVal)
+		// Oneshot wins (has higher value)
+		pct := (float64(oneshotVal-ralphVal) / float64(oneshotVal)) * 100
+		return fmt.Sprintf("Oneshot +%.2f%%", pct)
 	}
 
-	// For cost/time/tokens, lower is better
+	// For cost/time/tokens, lower is better - show percentage reduction
 	if ralphVal < oneshotVal {
-		return fmt.Sprintf("Ralph (%.1fx)", float64(oneshotVal)/float64(ralphVal))
+		// Ralph wins (has lower value) - percentage saved relative to loser
+		pct := (float64(oneshotVal-ralphVal) / float64(oneshotVal)) * 100
+		return fmt.Sprintf("Ralph -%.2f%%", pct)
 	}
-	return fmt.Sprintf("Oneshot (%.1fx)", float64(ralphVal)/float64(oneshotVal))
+	// Oneshot wins (has lower value) - percentage saved relative to loser
+	pct := (float64(ralphVal-oneshotVal) / float64(oneshotVal)) * 100
+	return fmt.Sprintf("Oneshot -%.2f%%", pct)
 }
 
 // calcWinnerFloat calculates the winner for float metrics (e.g., cost)
@@ -131,7 +141,7 @@ func calcWinnerFloat(ralphVal, oneshotVal float64, higherIsBetter bool) string {
 		return "Tie"
 	}
 	if oneshotVal == 0 {
-		return "Ralph"
+		return "N/A"
 	}
 
 	// Check for effective tie (within 1%)
@@ -141,16 +151,26 @@ func calcWinnerFloat(ralphVal, oneshotVal float64, higherIsBetter bool) string {
 	}
 
 	// Determine winner based on whether higher or lower is better
+	// Percentage is always calculated as (winner - loser) / winner * 100
 	if higherIsBetter {
+		// For higher is better metrics, show percentage increase
 		if ralphVal > oneshotVal {
-			return fmt.Sprintf("Ralph (%.1fx)", ralphVal/oneshotVal)
+			// Ralph wins (has higher value)
+			pct := ((ralphVal - oneshotVal) / oneshotVal) * 100
+			return fmt.Sprintf("Ralph +%.2f%%", pct)
 		}
-		return fmt.Sprintf("Oneshot (%.1fx)", oneshotVal/ralphVal)
+		// Oneshot wins (has higher value)
+		pct := ((oneshotVal - ralphVal) / oneshotVal) * 100
+		return fmt.Sprintf("Oneshot +%.2f%%", pct)
 	}
 
-	// For cost/time/tokens, lower is better
+	// For cost/time/tokens, lower is better - show percentage reduction
 	if ralphVal < oneshotVal {
-		return fmt.Sprintf("Ralph (%.1fx)", oneshotVal/ralphVal)
+		// Ralph wins (has lower value) - percentage saved relative to loser
+		pct := ((oneshotVal - ralphVal) / oneshotVal) * 100
+		return fmt.Sprintf("Ralph -%.2f%%", pct)
 	}
-	return fmt.Sprintf("Oneshot (%.1fx)", ralphVal/oneshotVal)
+	// Oneshot wins (has lower value) - percentage saved relative to loser
+	pct := ((ralphVal - oneshotVal) / oneshotVal) * 100
+	return fmt.Sprintf("Oneshot -%.2f%%", pct)
 }

@@ -54,7 +54,7 @@
       "title": "Add issue templates",
       "details": "Create .github/ISSUE_TEMPLATE/ directory with: bug_report.md (expected/actual behavior, repro steps, version info) and feature_request.md (problem statement, proposed solution, acceptance criteria).",
       "priority": "medium",
-      "status": "todo",
+      "status": "done",
       "tests": "New issues show template chooser with Bug Report and Feature Request options"
     },
     {
