@@ -22,7 +22,7 @@
       "title": "Implement temp project directory management",
       "details": "Create internal/eval/project.go with functions to: 1) Create unique project directory named 'eval-{approach}-{suite}-{model}-{timestamp}', 2) Set up project structure based on approach, 3) Clean up temp directories on request. Handle both ralph (nested suite subdir) and oneshot (flat) structures matching run.sh behavior.",
       "priority": "high",
-      "status": "todo",
+      "status": "done",
       "tests": "Unit tests verify correct directory naming, creation, and cleanup"
     },
     {
