@@ -69,8 +69,10 @@ type PRDStatus struct {
 	IncompleteTasks int
 	TodoTasks       int
 	FailedTasks     int
-	CurrentTaskID   string
-	CurrentTask     string
+	CurrentTaskID   string   // Deprecated: use CurrentTaskIDs for multi-task support
+	CurrentTask     string   // Deprecated: use CurrentTasks for multi-task support
+	CurrentTaskIDs  []string // All in-progress task IDs
+	CurrentTasks    []string // All in-progress task titles
 }
 
 func (s *PRDStatus) IsComplete() bool {
@@ -110,6 +112,9 @@ func LoadPRDStatus(path string) (*PRDStatus, error) {
 
 	st := &PRDStatus{}
 	st.TotalTasks = len(f.Tasks)
+	st.CurrentTaskIDs = []string{}
+	st.CurrentTasks = []string{}
+
 	for _, t := range f.Tasks {
 		status := strings.ToLower(strings.TrimSpace(t.Status))
 		id := strings.TrimSpace(t.ID)
@@ -126,11 +131,18 @@ func LoadPRDStatus(path string) (*PRDStatus, error) {
 		default: // in_progress or other
 			st.IncompleteTasks++
 		}
-		if st.CurrentTask == "" && status == "in_progress" && title != "" {
-			st.CurrentTaskID = id
-			st.CurrentTask = title
+		// Collect all in-progress tasks
+		if status == "in_progress" && title != "" {
+			st.CurrentTaskIDs = append(st.CurrentTaskIDs, id)
+			st.CurrentTasks = append(st.CurrentTasks, title)
+			// Maintain backward compatibility: set first in-progress task as CurrentTask/CurrentTaskID
+			if st.CurrentTask == "" {
+				st.CurrentTaskID = id
+				st.CurrentTask = title
+			}
 		}
 	}
+	// If no in-progress tasks, fall back to first todo task for backward compatibility
 	if st.CurrentTask == "" {
 		for _, t := range f.Tasks {
 			status := strings.ToLower(strings.TrimSpace(t.Status))

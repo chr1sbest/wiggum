@@ -303,8 +303,17 @@ func (s *AgentStep) buildLoopContext(cfg AgentConfig, prdStatus *agent.PRDStatus
 	if prdStatus != nil && prdStatus.TotalTasks > 0 {
 		parts = append(parts, fmt.Sprintf("Tasks: %s (%d remaining).",
 			prdStatus.Progress(), prdStatus.IncompleteTasks))
-		if prdStatus.CurrentTask != "" {
+
+		// Show current task(s) - prefer multi-task view
+		if len(prdStatus.CurrentTasks) > 0 {
 			// Truncate long task descriptions
+			firstTask := prdStatus.CurrentTasks[0]
+			if len(firstTask) > 100 {
+				firstTask = firstTask[:100] + "..."
+			}
+			parts = append(parts, fmt.Sprintf("Current: %s", firstTask))
+		} else if prdStatus.CurrentTask != "" {
+			// Backward compatibility: single task
 			next := prdStatus.CurrentTask
 			if len(next) > 100 {
 				next = next[:100] + "..."

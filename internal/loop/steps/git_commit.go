@@ -87,15 +87,23 @@ func (s *GitCommitStep) Execute(ctx context.Context, rawConfig json.RawMessage) 
 	}
 
 	task := "working"
-	taskID := ""
+	taskIDs := []string{}
+
 	// Prefer prd.json for task info (current workflow).
 	if cfg.PrdFile != "" {
 		if prd, err := agent.LoadPRDStatus(cfg.PrdFile); err == nil && prd != nil {
-			if prd.CurrentTask != "" {
+			// Prefer multi-task fields (CurrentTaskIDs, CurrentTasks)
+			if len(prd.CurrentTaskIDs) > 0 {
+				taskIDs = prd.CurrentTaskIDs
+				if len(prd.CurrentTasks) > 0 {
+					task = prd.CurrentTasks[0] // Use first task title
+				}
+			} else if prd.CurrentTask != "" {
+				// Backward compatibility: single task
 				task = prd.CurrentTask
-			}
-			if prd.CurrentTaskID != "" {
-				taskID = prd.CurrentTaskID
+				if prd.CurrentTaskID != "" {
+					taskIDs = []string{prd.CurrentTaskID}
+				}
 			}
 		}
 	}
@@ -109,13 +117,23 @@ func (s *GitCommitStep) Execute(ctx context.Context, rawConfig json.RawMessage) 
 	}
 
 	msg := cfg.MessageTemplate
-	// If taskID is empty, best-effort strip common "{{task_id}}:" patterns.
-	if strings.TrimSpace(taskID) == "" {
+
+	// Handle multiple task IDs
+	if len(taskIDs) > 1 {
+		// Multiple tasks: join with ", " (e.g., "T101, T102")
+		taskIDStr := strings.Join(taskIDs, ", ")
+		msg = strings.ReplaceAll(msg, "{{task_id}}", taskIDStr)
+	} else if len(taskIDs) == 1 {
+		// Single task
+		msg = strings.ReplaceAll(msg, "{{task_id}}", sanitizeOneLine(taskIDs[0]))
+	} else {
+		// No task IDs - best-effort strip common "{{task_id}}:" patterns
 		msg = strings.ReplaceAll(msg, "{{task_id}}: ", "")
 		msg = strings.ReplaceAll(msg, "{{task_id}}:", "")
 		msg = strings.ReplaceAll(msg, "{{task_id}} ", "")
+		msg = strings.ReplaceAll(msg, "{{task_id}}", "")
 	}
-	msg = strings.ReplaceAll(msg, "{{task_id}}", sanitizeOneLine(taskID))
+
 	msg = strings.ReplaceAll(msg, "{{task}}", sanitizeOneLine(task))
 	msg = strings.ReplaceAll(msg, "{{timestamp}}", time.Now().Format(time.RFC3339))
 	msg = strings.TrimSpace(msg)
