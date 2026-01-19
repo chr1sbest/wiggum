@@ -70,7 +70,7 @@
       "title": "Update compare_evals.sh for new result format",
       "details": "Update evals/compare_evals.sh to read the standardized JSON result format. Add logic to find latest results for a suite by pattern matching filenames in evals/results/.",
       "priority": "medium",
-      "status": "todo",
+      "status": "done",
       "tests": "compare_evals.sh correctly parses new JSON format and extracts all metrics"
     },
     {
