@@ -120,6 +120,35 @@ Options:
 
 The PR body is auto-generated from `.ralph/prd.json`, listing completed tasks and any linked GitHub issues.
 
+## Architecture
+
+```
+cmd/ralph/           # CLI entry point and commands
+internal/
+├── loop/            # Loop execution engine with pluggable steps
+│   └── steps/       # Step implementations (agent, git-commit, command, readme-check, noop)
+├── agent/           # Session and PRD management
+├── banner/          # Welcome banner display
+├── config/          # JSON config loading with hot-reload
+├── tracker/         # Run state, metrics, and file locking
+├── resilience/      # Circuit breaker and retry logic
+├── status/          # Terminal UI progress display
+└── logger/          # Structured logging
+configs/             # Default configuration templates
+examples/            # Sample requirements files
+evals/               # Evaluation/testing framework
+```
+
+### Key Components
+
+- **cmd/ralph/main.go** - CLI dispatcher routing commands (run, init, add, fix, upgrade)
+- **internal/loop/loop.go** - Core loop orchestrator executing steps iteratively
+- **internal/loop/steps/agent.go** - Claude Code invocation step with exit detection
+- **internal/agent/prd_status.go** - PRD task parsing (todo → in_progress → done → failed)
+- **internal/config/loader.go** - Configuration management with JSON config files
+- **internal/tracker/lock.go** - File-based locking preventing concurrent runs
+- **internal/resilience/circuit_breaker.go** - Fault tolerance with exponential backoff
+
 ## Development
 
 ### Installation from source
