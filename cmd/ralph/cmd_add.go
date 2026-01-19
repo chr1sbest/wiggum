@@ -26,17 +26,17 @@ Usage:
 Flags:
   -file   Path to markdown file with work description
   -desc   Work description
-  -model  Claude model to use (default: opus)
+  -model  Claude model to use
 
 Examples:
   ralph add ../work.md
   ralph add "Add an endpoint that returns the user's country based on IP"
-  ralph add -file ../work.md -model opus
+  ralph add -file ../work.md -model sonnet
 `)
 	}
 	description := fs.String("desc", "", "Work description")
 	filePath := fs.String("file", "", "Path to markdown file with work description")
-	model := fs.String("model", "opus", "Claude model to use")
+	model := fs.String("model", "", "Claude model to use")
 	if err := fs.Parse(args); err != nil {
 		if errors.Is(err, flag.ErrHelp) {
 			fs.Usage()
@@ -81,7 +81,7 @@ Examples:
 
 	chosenModel := strings.TrimSpace(*model)
 	if chosenModel == "" {
-		chosenModel = "opus"
+		chosenModel = "default"
 	}
 
 	// Archive completed tasks and compact learnings before adding new work

@@ -257,6 +257,13 @@ func looksLikeGoInstall(exeDir string) bool {
 	}
 	gopath := strings.TrimSpace(os.Getenv("GOPATH"))
 	if gopath == "" {
+		// Check default ~/go/bin
+		if home, err := os.UserHomeDir(); err == nil {
+			defaultBin := filepath.Join(home, "go", "bin")
+			if samePath(exeDir, defaultBin) {
+				return true
+			}
+		}
 		return false
 	}
 	for _, p := range strings.Split(gopath, string(os.PathListSeparator)) {

@@ -59,7 +59,10 @@ func runCmd(args []string) int {
 		return 1
 	}
 	if allComplete {
-		fmt.Println("All tasks are complete. I don't know what that means.")
+		fmt.Println("All tasks are complete!")
+		fmt.Println("\nTo add more work:")
+		fmt.Println("  ralph add work.md")
+		fmt.Println("  ralph add \"your task description\"")
 		return 0
 	}
 
@@ -256,7 +259,7 @@ func validateRunPreflight(configFile string) error {
 
 func validateClaudePreflight() error {
 	if _, err := exec.LookPath("claude"); err != nil {
-		return fmt.Errorf("Claude Code is required but was not found in PATH.\n\nFix:\n  - Install Claude Code\n  - Ensure the `claude` binary is on your PATH\n  - Confirm it works: claude --help")
+		return fmt.Errorf("Claude Code is required but was not found in PATH.\n\nFix:\n  - Install Claude Code: https://docs.anthropic.com/en/docs/claude-code\n  - Ensure the `claude` binary is on your PATH\n  - Confirm it works: claude --help")
 	}
 
 	// Ensure the CLI is runnable (and not immediately failing due to a broken install).
@@ -336,7 +339,7 @@ func writeResultJSON(trk *tracker.Writer, cfg *config.Config, modelOverride stri
 	if err != nil {
 		return err
 	}
-	return writeFileAtomic("result.json", data, 0644)
+	return writeFileAtomic(".ralph/result.json", data, 0644)
 }
 
 func findClaudeModelFromConfig(cfg *config.Config) string {

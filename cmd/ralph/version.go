@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 	"runtime/debug"
 	"strconv"
 	"strings"
@@ -14,7 +16,11 @@ var commit = "none"
 var date = "unknown"
 
 func versionLine() string {
+	installMethod := detectInstallMethod()
 	if version != "dev" {
+		if installMethod != "" {
+			return fmt.Sprintf("ralph version %s (%s)", version, installMethod)
+		}
 		return fmt.Sprintf("ralph version %s", version)
 	}
 
@@ -44,16 +50,24 @@ func versionLine() string {
 		}
 	}
 
+	var suffix string
+	if installMethod != "" {
+		suffix = ", " + installMethod
+	}
+
 	if (c == "" || c == "none") && (d == "" || d == "unknown") {
+		if installMethod != "" {
+			return fmt.Sprintf("ralph version dev (%s)", installMethod)
+		}
 		return "ralph version dev"
 	}
 	if c == "" || c == "none" {
-		return fmt.Sprintf("ralph version dev (built %s)", d)
+		return fmt.Sprintf("ralph version dev (built %s%s)", d, suffix)
 	}
 	if d == "" || d == "unknown" {
-		return fmt.Sprintf("ralph version dev (commit %s)", c)
+		return fmt.Sprintf("ralph version dev (commit %s%s)", c, suffix)
 	}
-	return fmt.Sprintf("ralph version dev (commit %s, built %s)", c, d)
+	return fmt.Sprintf("ralph version dev (commit %s, built %s%s)", c, d, suffix)
 }
 
 func compareSemver(a, b string) int {
@@ -82,4 +96,22 @@ func parseSemver(v string) [3]int {
 		out[i] = n
 	}
 	return out
+}
+
+func detectInstallMethod() string {
+	exePath, err := os.Executable()
+	if err != nil {
+		return ""
+	}
+	if resolved, err := filepath.EvalSymlinks(exePath); err == nil {
+		exePath = resolved
+	}
+	if looksLikeHomebrewInstall(exePath) {
+		return "brew"
+	}
+	exeDir := filepath.Dir(exePath)
+	if looksLikeGoInstall(exeDir) {
+		return "go install"
+	}
+	return ""
 }

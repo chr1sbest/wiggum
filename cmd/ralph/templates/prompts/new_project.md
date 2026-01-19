@@ -45,7 +45,9 @@ GOOD (consolidated - 3 tasks):
 - These tools reduce implementation time and ensure consistency.
 
 ## Output Format
-Return ONLY valid JSON in this exact format (no markdown fences, no extra text):
+Return ONLY valid JSON in this exact format (no markdown fences, no extra text).
+
+**IMPORTANT: All tasks must have `"status": "todo"` - these are tasks to be done, not already completed.**
 
 ---FILE: prd.json---
 {

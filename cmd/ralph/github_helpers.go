@@ -67,7 +67,7 @@ func checkGitHubAuth() error {
 
 func checkClaudeAvailable() error {
 	if _, err := exec.LookPath("claude"); err != nil {
-		return fmt.Errorf("claude not found in PATH")
+		return fmt.Errorf("claude not found in PATH. Install Claude Code: https://docs.anthropic.com/en/docs/claude-code")
 	}
 
 	// Quick check: run claude with minimal args to see if it's working

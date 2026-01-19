@@ -34,9 +34,22 @@ Return ONLY valid JSON in this exact format (no markdown fences, no extra text):
   }
 ]
 
+**If the work request is from a GitHub issue**, include the issue field:
+```json
+{
+  "id": "T101",
+  "title": "...",
+  "details": "...",
+  "priority": "...",
+  "status": "todo",
+  "tests": "...",
+  "issue": {"number": 42, "url": "https://github.com/owner/repo/issues/42"}
+}
+```
+
 ## Example
 
-Given existing project with tasks T001-T003, and new work request: "Add error handling for invalid files"
+Given existing project with tasks T001-T003, and new work request from GitHub Issue #42:
 
 Output:
 ---NEW_TASKS---
@@ -44,17 +57,10 @@ Output:
   {
     "id": "T101",
     "title": "Add input file validation",
-    "details": "Check if input file exists and is readable before processing, show clear error message if not",
+    "details": "Check if input file exists and is readable before processing",
     "priority": "high",
     "status": "todo",
-    "tests": "Running with non-existent file shows helpful error instead of stack trace"
-  },
-  {
-    "id": "T102",
-    "title": "Handle malformed CSV gracefully",
-    "details": "Catch CSV parsing errors and report line number and issue",
-    "priority": "medium",
-    "status": "todo",
-    "tests": "Running with malformed CSV shows error with line number"
+    "tests": "Running with non-existent file shows helpful error",
+    "issue": {"number": 42, "url": "https://github.com/owner/repo/issues/42"}
   }
 ]

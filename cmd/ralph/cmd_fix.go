@@ -26,7 +26,7 @@ Usage:
 Flags:
   -issue    GitHub issue number (infers repo from git remote)
   -repo     Override repository (owner/repo format)
-  -model    Claude model to use (default: opus)
+  -model    Claude model to use
 
 Examples:
   ralph fix --issue 42
@@ -37,7 +37,7 @@ Examples:
 
 	issueNum := fs.Int("issue", 0, "GitHub issue number")
 	repoOverride := fs.String("repo", "", "Repository (owner/repo)")
-	model := fs.String("model", "opus", "Claude model to use")
+	model := fs.String("model", "", "Claude model to use")
 
 	if err := fs.Parse(args); err != nil {
 		if errors.Is(err, flag.ErrHelp) {
@@ -127,7 +127,7 @@ Examples:
 
 	chosenModel := strings.TrimSpace(*model)
 	if chosenModel == "" {
-		chosenModel = "opus"
+		chosenModel = "default"
 	}
 
 	// Archive completed tasks and compact learnings before adding new work

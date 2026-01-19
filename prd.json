@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "tasks": [
+    {
+      "id": "T001",
+      "title": "Explore repository and summarize",
+      "details": "Explored codebase structure, identified tech stack, and documented architecture",
+      "priority": "high",
+      "status": "done",
+      "tests": "requirements.md exists with project summary"
+    }
+  ]
+}

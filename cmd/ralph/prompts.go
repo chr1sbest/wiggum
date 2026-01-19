@@ -22,6 +22,9 @@ var loopPromptTemplate string
 //go:embed templates/prompts/readme.md
 var readmeTemplate string
 
+//go:embed templates/prompts/explore_repo.md
+var exploreRepoPromptTemplate string
+
 func renderNewProjectPrompt(projectName, requirements string) (string, error) {
 	return renderTemplate("new_project", newProjectPromptTemplate, projectName, requirements)
 }
@@ -62,6 +65,10 @@ func renderLoopPrompt(projectName, requirements string) (string, error) {
 
 func renderReadme(projectName, requirements string) (string, error) {
 	return renderTemplate("readme", readmeTemplate, projectName, requirements)
+}
+
+func renderExploreRepoPrompt(projectName string) (string, error) {
+	return renderTemplate("explore_repo", exploreRepoPromptTemplate, projectName, "")
 }
 
 func renderTemplate(name, tmplText, projectName, requirements string) (string, error) {

@@ -42,7 +42,7 @@ func main() {
 }
 
 func printUsage() {
-	fmt.Println(`ralph 🖍️  Modular Automation Loop
+	fmt.Println(`ralph 🖍️
 
 "I'm a helper!"
 — Ralph Wiggum
@@ -60,13 +60,18 @@ Commands:
   help         Show this message again (I like explaining)
 
 Examples:
+  # New project
   mkdir myproject && cd myproject
   ralph init requirements.md
   ralph run
-  ralph add "Add an endpoint that returns the user's country based on IP"
+
+  # Existing repo
+  cd my-existing-repo
+  ralph init
+  ralph add "Add unit tests for the auth module"
 
 Notes:
-  - Ralph works one thing at a time.
+  - Ralph works on one thing at a time.
   - If nothing happens, that means it worked.
 
 Run 'ralph <command> -h' for details.`)

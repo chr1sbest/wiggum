@@ -13,7 +13,7 @@ func runClaudeOnce(prompt string) (string, error) {
 
 func runClaudeOnceWithModel(prompt string, model string) (string, error) {
 	if _, err := exec.LookPath("claude"); err != nil {
-		return "", fmt.Errorf("claude not found in PATH")
+		return "", fmt.Errorf("claude not found in PATH. Install Claude Code: https://docs.anthropic.com/en/docs/claude-code")
 	}
 	args := []string{"--dangerously-skip-permissions"}
 	if strings.TrimSpace(model) != "" {

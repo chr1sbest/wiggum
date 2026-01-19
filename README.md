@@ -51,11 +51,12 @@ ralph run
 
 ### Attach to existing project
 
-Ralph works with existing codebases too:
+Ralph works with existing codebases too. Just run `ralph init` without a requirements file — Ralph will explore the codebase and generate a summary:
 
 ```bash
 cd my-existing-repo
-ralph init requirements.md
+ralph init                    # Ralph explores and summarizes
+ralph add "Add unit tests"    # Add work items
 ralph run
 ```
 

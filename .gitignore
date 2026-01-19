@@ -35,3 +35,4 @@ flasky/
 # Evals
 eval-*/
 evals/results/
+.ralph/
