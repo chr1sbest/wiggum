@@ -54,7 +54,7 @@
       "title": "Add ralph eval subcommand to main.go",
       "details": "Add 'eval' case to the switch statement in cmd/ralph/main.go that calls evalCmd(os.Args[2:]). Update printUsage() to include eval command with description 'Run evaluation suites against ralph and oneshot approaches'.",
       "priority": "high",
-      "status": "todo",
+      "status": "done",
       "tests": "ralph eval shows help; ralph help includes eval command"
     },
     {
