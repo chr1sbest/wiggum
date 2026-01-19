@@ -62,7 +62,7 @@
       "title": "Implement unified eval runner entry point",
       "details": "Create internal/eval/runner.go with Run(config RunConfig) (*EvalResult, error) that: 1) Loads suite config, 2) Creates project directory, 3) Dispatches to runRalphApproach or runOneshotApproach based on config, 4) Runs shared tests via testrunner, 5) Collects code metrics, 6) Saves result JSON to evals/results/, 7) Prints formatted summary. Include banner display matching run.sh output.",
       "priority": "high",
-      "status": "todo",
+      "status": "done",
       "tests": "End-to-end test running both approaches; results JSON saved correctly"
     },
     {

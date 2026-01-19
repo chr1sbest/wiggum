@@ -317,3 +317,109 @@ func parseClaudeOutput(outputPath string) (*ClaudeOutput, error) {
 
 	return &output, nil
 }
+
+// Run executes a complete evaluation run with the given configuration.
+// It orchestrates loading the suite, running the appropriate approach,
+// running tests, collecting metrics, and saving results.
+func Run(config *RunConfig) (*EvalResult, error) {
+	// Validate config
+	if err := config.Validate(); err != nil {
+		return nil, fmt.Errorf("invalid configuration: %w", err)
+	}
+
+	// Print banner
+	printBanner(config)
+
+	// Load suite configuration
+	suite, err := LoadSuite(config.SuiteName)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load suite: %w", err)
+	}
+
+	// Run the appropriate approach
+	var result *EvalResult
+	if config.IsRalphApproach() {
+		fmt.Println("Running Ralph...")
+		fmt.Println("")
+		result, err = runRalphApproach(config, suite)
+	} else {
+		fmt.Println("Running One-Shot Claude...")
+		fmt.Println("")
+		result, err = runOneshotApproach(config, suite)
+	}
+
+	if err != nil {
+		return nil, fmt.Errorf("approach execution failed: %w", err)
+	}
+
+	fmt.Println("")
+	fmt.Printf("=== Generation completed in %ds ===\n", result.DurationSeconds)
+
+	// Run shared tests
+	fmt.Println("")
+	fmt.Println("=== Running Test Suite ===")
+	fmt.Println("")
+
+	testResult, err := RunSharedTests(result.OutputDir, suite, 8000)
+	if err != nil {
+		fmt.Printf("WARNING: test execution failed: %v\n", err)
+		// Continue with zero test results
+		testResult = &TestResult{}
+	}
+
+	// Update result with test metrics
+	result.SharedTestsPassed = testResult.Passed
+	result.SharedTestsTotal = testResult.Total
+
+	// Collect code metrics
+	metrics, err := CollectCodeMetrics(result.OutputDir)
+	if err != nil {
+		fmt.Printf("WARNING: failed to collect code metrics: %v\n", err)
+		metrics = &CodeMetrics{}
+	}
+
+	result.FilesGenerated = metrics.FilesGenerated
+	result.LinesGenerated = metrics.LinesGenerated
+
+	// Save result to file
+	resultPath, err := result.SaveToFile()
+	if err != nil {
+		return nil, fmt.Errorf("failed to save results: %w", err)
+	}
+
+	// Print summary
+	printSummary(result, resultPath)
+
+	return result, nil
+}
+
+// printBanner displays the evaluation run banner
+func printBanner(config *RunConfig) {
+	fmt.Println("")
+	fmt.Println("╔══════════════════════════════════════════════════════════════╗")
+	fmt.Printf("║                    EVAL: %-32s║\n", config.SuiteName)
+	fmt.Printf("║  Approach: %-8s | Model: %-28s║\n", config.Approach, config.Model)
+	fmt.Printf("║  Started: %-46s║\n", time.Now().Format("2006-01-02 15:04:05"))
+	fmt.Println("║  Timeout: 2 hours                                            ║")
+	fmt.Println("╚══════════════════════════════════════════════════════════════╝")
+	fmt.Println("")
+}
+
+// printSummary displays the results summary
+func printSummary(result *EvalResult, resultPath string) {
+	fmt.Println("")
+	fmt.Println("╔══════════════════════════════════════════════════════════════╗")
+	fmt.Println("║                         SUMMARY                              ║")
+	fmt.Println("╚══════════════════════════════════════════════════════════════╝")
+	fmt.Println("")
+	fmt.Printf("%-20s %s\n", "Project:", filepath.Base(result.OutputDir))
+	fmt.Printf("%-20s %ds\n", "Time:", result.DurationSeconds)
+	fmt.Printf("%-20s %d\n", "Claude Calls:", result.TotalCalls)
+	fmt.Printf("%-20s %d\n", "Total Tokens:", result.TotalTokens)
+	fmt.Printf("%-20s $%.4f\n", "Cost:", result.CostUSD)
+	fmt.Printf("%-20s %d/%d\n", "Tests:", result.SharedTestsPassed, result.SharedTestsTotal)
+	fmt.Printf("%-20s %d files, %d lines\n", "Code:", result.FilesGenerated, result.LinesGenerated)
+	fmt.Println("")
+	fmt.Printf("Results: %s\n", resultPath)
+	fmt.Println("")
+}
