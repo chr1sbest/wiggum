@@ -428,9 +428,9 @@ func (s *AgentStep) saveOutput(logDir, output string, loopCount int) {
 	// Try to parse as JSON
 	var jsonData map[string]interface{}
 	if err := json.Unmarshal([]byte(jsonOutput), &jsonData); err == nil {
-		// Valid JSON - save to loop_N.json
+		// Valid JSON - save to loop_N.json (use cleaned jsonOutput, not raw output)
 		jsonPath := filepath.Join(logDir, fmt.Sprintf("loop_%d.json", loopCount))
-		if err := os.WriteFile(jsonPath, []byte(output), 0644); err != nil {
+		if err := os.WriteFile(jsonPath, []byte(jsonOutput), 0644); err != nil {
 			log.Printf("warning: failed to write JSON log %s: %v", jsonPath, err)
 		}
 

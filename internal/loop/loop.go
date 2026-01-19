@@ -255,6 +255,17 @@ func (l *Loop) Run(ctx context.Context) error {
 		default:
 		}
 
+		// Preflight: check if all tasks are complete before running Claude
+		if l.prdPath != "" {
+			prdStatus, _ := agent.LoadPRDStatus(l.prdPath)
+			if prdStatus != nil && prdStatus.TotalTasks > 0 && !prdStatus.HasActionableTasks() {
+				l.state.Status = StatusComplete
+				l.status.Complete(l.state.LoopNumber, l.countEnabledSteps())
+				l.writeRunState("complete", "", time.Time{}, "", nil)
+				return &steps.AgentExitError{Reason: agent.ExitReasonNoActionableTasks}
+			}
+		}
+
 		// Check max_loops_per_task limit before running
 		if l.config.MaxLoopsPerTask > 0 && l.prdPath != "" {
 			prdStatus, _ := agent.LoadPRDStatus(l.prdPath)
