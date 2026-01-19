@@ -85,39 +85,98 @@ echo "Ralph:   $(basename "$RALPH_METRICS")"
 echo "Oneshot: $(basename "$ONESHOT_METRICS")"
 echo ""
 
+# Calculate percentage differences
+calc_pct_diff() {
+    local ralph="$1" oneshot="$2"
+    if [ "$oneshot" = "0" ] || [ -z "$oneshot" ]; then
+        echo "N/A"
+        return
+    fi
+    local diff=$(echo "scale=2; (($ralph - $oneshot) / $oneshot) * 100" | bc 2>/dev/null)
+    if [ -z "$diff" ]; then
+        echo "N/A"
+        return
+    fi
+    # Determine winner based on metric type (lower is better for cost/time/tokens)
+    local abs_diff=$(echo "$diff" | tr -d '-')
+    if (( $(echo "$diff < 0" | bc -l) )); then
+        echo "Ralph -${abs_diff}%"
+    elif (( $(echo "$diff > 0" | bc -l) )); then
+        echo "Oneshot -${abs_diff}%"
+    else
+        echo "Tie"
+    fi
+}
+
+calc_pct_diff_tests() {
+    local ralph="$1" oneshot="$2"
+    if [ "$oneshot" = "0" ] || [ -z "$oneshot" ]; then
+        echo "N/A"
+        return
+    fi
+    local diff=$(echo "scale=2; (($ralph - $oneshot) / $oneshot) * 100" | bc 2>/dev/null)
+    if [ -z "$diff" ]; then
+        echo "N/A"
+        return
+    fi
+    # For tests, higher is better
+    local abs_diff=$(echo "$diff" | tr -d '-')
+    if (( $(echo "$diff > 0" | bc -l) )); then
+        echo "Ralph +${abs_diff}%"
+    elif (( $(echo "$diff < 0" | bc -l) )); then
+        echo "Oneshot +${abs_diff}%"
+    else
+        echo "Tie"
+    fi
+}
+
+# Calculate winners
+DURATION_WINNER=$(calc_pct_diff "$R_TIME" "$O_TIME")
+TOKENS_WINNER=$(calc_pct_diff "$R_TOTAL" "$O_TOTAL")
+COST_WINNER=$(calc_pct_diff "$R_COST" "$O_COST")
+TESTS_WINNER=$(calc_pct_diff_tests "$R_SHARED" "$O_SHARED")
+
 # Print comparison table
-printf "┌──────────────────────┬───────────────────┬───────────────────┐\n"
-printf "│ %-20s │ %-17s │ %-17s │\n" "Metric" "Ralph" "One-Shot"
-printf "├──────────────────────┼───────────────────┼───────────────────┤\n"
-printf "│ %-20s │ %15ss │ %15ss │\n" "Duration" "$R_TIME" "$O_TIME"
-printf "│ %-20s │ %17s │ %17s │\n" "Claude Calls" "$R_CALLS" "$O_CALLS"
-printf "│ %-20s │ %17s │ %17s │\n" "Total Tokens" "$R_TOTAL" "$O_TOTAL"
-printf "│ %-20s │ %16s │ %16s │\n" "Cost" "\$$R_COST" "\$$O_COST"
-printf "├──────────────────────┼───────────────────┼───────────────────┤\n"
-printf "│ %-20s │ %13s/%s │ %13s/%s │\n" "Tests Passed" "$R_SHARED" "$R_SHARED_TOTAL" "$O_SHARED" "$O_SHARED_TOTAL"
-printf "├──────────────────────┼───────────────────┼───────────────────┤\n"
-printf "│ %-20s │ %17s │ %17s │\n" "Files Generated" "$R_FILES" "$O_FILES"
-printf "│ %-20s │ %17s │ %17s │\n" "Lines Generated" "$R_LINES" "$O_LINES"
-printf "└──────────────────────┴───────────────────┴───────────────────┘\n"
+printf "┌──────────────────────┬───────────────────┬───────────────────┬─────────────────────┐\n"
+printf "│ %-20s │ %-17s │ %-17s │ %-19s │\n" "Metric" "Ralph" "Oneshot" "Winner"
+printf "├──────────────────────┼───────────────────┼───────────────────┼─────────────────────┤\n"
+printf "│ %-20s │ %15ss │ %15ss │ %-19s │\n" "Duration" "$R_TIME" "$O_TIME" "$DURATION_WINNER"
+printf "│ %-20s │ %17s │ %17s │ %-19s │\n" "Total Tokens" "$R_TOTAL" "$O_TOTAL" "$TOKENS_WINNER"
+printf "│ %-20s │ \$%16s │ \$%16s │ %-19s │\n" "Cost" "$R_COST" "$O_COST" "$COST_WINNER"
+printf "│ %-20s │ %13s/%s │ %13s/%s │ %-19s │\n" "Shared Tests" "$R_SHARED" "$R_SHARED_TOTAL" "$O_SHARED" "$O_SHARED_TOTAL" "$TESTS_WINNER"
+printf "└──────────────────────┴───────────────────┴───────────────────┴─────────────────────┘\n"
 
 echo ""
 
-# Determine winner based on tests passed (the fair comparison)
-echo "═══════════════════════════════════════════════════════════════════════"
-if [ "$R_SHARED" -gt "$O_SHARED" ]; then
-    echo "🏆 WINNER: Ralph ($R_SHARED vs $O_SHARED tests passed)"
-elif [ "$O_SHARED" -gt "$R_SHARED" ]; then
-    echo "🏆 WINNER: One-Shot ($O_SHARED vs $R_SHARED tests passed)"
+# Summary line
+echo "═══════════════════════════════════════════════════════════════════════════════════════"
+RALPH_WINS=0
+ONESHOT_WINS=0
+TIES=0
+
+[[ "$DURATION_WINNER" == Ralph* ]] && RALPH_WINS=$((RALPH_WINS + 1))
+[[ "$DURATION_WINNER" == Oneshot* ]] && ONESHOT_WINS=$((ONESHOT_WINS + 1))
+[[ "$DURATION_WINNER" == "Tie" ]] && TIES=$((TIES + 1))
+
+[[ "$TOKENS_WINNER" == Ralph* ]] && RALPH_WINS=$((RALPH_WINS + 1))
+[[ "$TOKENS_WINNER" == Oneshot* ]] && ONESHOT_WINS=$((ONESHOT_WINS + 1))
+[[ "$TOKENS_WINNER" == "Tie" ]] && TIES=$((TIES + 1))
+
+[[ "$COST_WINNER" == Ralph* ]] && RALPH_WINS=$((RALPH_WINS + 1))
+[[ "$COST_WINNER" == Oneshot* ]] && ONESHOT_WINS=$((ONESHOT_WINS + 1))
+[[ "$COST_WINNER" == "Tie" ]] && TIES=$((TIES + 1))
+
+[[ "$TESTS_WINNER" == Ralph* ]] && RALPH_WINS=$((RALPH_WINS + 1))
+[[ "$TESTS_WINNER" == Oneshot* ]] && ONESHOT_WINS=$((ONESHOT_WINS + 1))
+[[ "$TESTS_WINNER" == "Tie" ]] && TIES=$((TIES + 1))
+
+if [ "$RALPH_WINS" -gt "$ONESHOT_WINS" ]; then
+    echo "🏆 OVERALL WINNER: Ralph (${RALPH_WINS} metrics vs ${ONESHOT_WINS})"
+elif [ "$ONESHOT_WINS" -gt "$RALPH_WINS" ]; then
+    echo "🏆 OVERALL WINNER: Oneshot (${ONESHOT_WINS} metrics vs ${RALPH_WINS})"
 else
-    echo "🤝 TIE on tests passed ($R_SHARED each)"
-    # Break tie with cost
-    R_COST_INT=$(echo "$R_COST" | cut -d. -f1)
-    O_COST_INT=$(echo "$O_COST" | cut -d. -f1)
-    if [ "$R_COST_INT" -lt "$O_COST_INT" ]; then
-        echo "   Ralph wins on cost (\$$R_COST vs \$$O_COST)"
-    else
-        echo "   One-shot wins on cost (\$$O_COST vs \$$R_COST)"
-    fi
+    echo "🤝 TIE: Both approaches won ${RALPH_WINS} metrics each"
 fi
-echo "═══════════════════════════════════════════════════════════════════════"
+[ "$TIES" -gt 0 ] && echo "   (${TIES} metric(s) tied)"
+echo "═══════════════════════════════════════════════════════════════════════════════════════"
 echo ""
