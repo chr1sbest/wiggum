@@ -215,6 +215,27 @@ Claude output logs are written to `.ralph/logs/`:
 
 If you hit a quota limit, wait for your quota to reset and rerun `ralph run`.
 
+## Contributing (5 min quickstart)
+
+Contributions welcome! Here's how to get started:
+
+```bash
+# Run tests
+go test ./...
+
+# Format code
+go fmt ./...
+
+# Install locally for testing
+go install ./cmd/ralph
+```
+
+**Key directories:**
+- `cmd/ralph/` - CLI entry point and command routing
+- `internal/` - Core logic (loop engine, PRD management, session control)
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for full guidelines including PR process and code style requirements.
+
 ## License
 
 MIT License - see [LICENSE](LICENSE) file for details.
