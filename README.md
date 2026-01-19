@@ -214,3 +214,7 @@ Claude output logs are written to `.ralph/logs/`:
 ### Claude usage limit / rate limit
 
 If you hit a quota limit, wait for your quota to reset and rerun `ralph run`.
+
+## License
+
+MIT License - see [LICENSE](LICENSE) file for details.
