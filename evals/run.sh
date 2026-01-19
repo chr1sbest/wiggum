@@ -287,30 +287,35 @@ LINE_COUNT=$(find . -type f \( -name "*.go" -o -name "*.py" \) -not -path "./.ra
 # Save metrics
 # =============================================================================
 
-mkdir -p .ralph
-cat > .ralph/run_metrics.json << EOF
+# Generate ISO 8601 timestamp
+ISO_TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+# Create standardized result JSON
+RESULT_FILE="$RESULTS_DIR/${SUITE}-${APPROACH}-${MODEL}-${TIMESTAMP}.json"
+
+cat > "$RESULT_FILE" << EOF
 {
   "suite": "$SUITE",
   "approach": "$APPROACH",
   "model": "$MODEL",
-  "project": "$PROJECT",
-  "timestamp": "$(date -Iseconds)",
-  "elapsed_seconds": $ELAPSED,
-  "total_claude_calls": $CLAUDE_CALLS,
+  "timestamp": "$ISO_TIMESTAMP",
+  "duration_seconds": $ELAPSED,
+  "total_calls": $CLAUDE_CALLS,
   "input_tokens": $INPUT_TOKENS,
   "output_tokens": $OUTPUT_TOKENS,
   "total_tokens": $TOTAL_TOKENS,
-  "total_cost_usd": $COST_USD,
-  "tests_passed": $TESTS_PASSED,
-  "tests_failed": $TESTS_FAILED,
-  "tests_total": $TESTS_TOTAL,
+  "cost_usd": $COST_USD,
+  "shared_tests_passed": $TESTS_PASSED,
+  "shared_tests_total": $TESTS_TOTAL,
   "files_generated": $FILE_COUNT,
-  "lines_generated": $LINE_COUNT
+  "lines_generated": $LINE_COUNT,
+  "output_dir": "$PROJECT_DIR"
 }
 EOF
 
-# Also save to results dir
-cp .ralph/run_metrics.json "$RESULTS_DIR/${PROJECT}_metrics.json"
+# Also save to project directory for backwards compatibility
+mkdir -p .ralph
+cp "$RESULT_FILE" .ralph/run_metrics.json
 
 # =============================================================================
 # Summary
@@ -329,5 +334,5 @@ printf "%-20s \$%s\n" "Cost:" "$COST_USD"
 printf "%-20s %s/%s\n" "Tests:" "$TESTS_PASSED" "$TESTS_TOTAL"
 printf "%-20s %s files, %s lines\n" "Code:" "$FILE_COUNT" "$LINE_COUNT"
 echo ""
-echo "Results: $RESULTS_DIR/${PROJECT}_metrics.json"
+echo "Results: $RESULT_FILE"
 echo ""

@@ -46,7 +46,7 @@
       "title": "Standardize result JSON schema in run.sh",
       "details": "Update evals/run.sh to output results in the standardized JSON format: {suite, approach, model, timestamp (ISO 8601), duration_seconds, total_calls, input_tokens, output_tokens, total_tokens, cost_usd, shared_tests_passed, shared_tests_total, files_generated, lines_generated, output_dir}. Save to evals/results/\u003csuite\u003e-\u003capproach\u003e-\u003cmodel\u003e-\u003ctimestamp\u003e.json.",
       "priority": "high",
-      "status": "todo",
+      "status": "done",
       "tests": "Running an eval produces JSON file in evals/results/ with all required fields in correct format"
     },
     {
