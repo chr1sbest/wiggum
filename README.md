@@ -219,6 +219,33 @@ Tasks in `prd.json` progress through these statuses:
 
 Ralph automatically picks the first `todo` task and moves it through these states. If a task takes too many loop iterations without completing, it's marked as `failed` to prevent infinite loops.
 
+### Session Management
+
+Ralph maintains session persistence to optimize Claude Code interactions and provide crash recovery:
+
+#### Session Persistence (`.ralph_session`)
+
+Ralph tracks Claude Code sessions across loop iterations to maintain context continuity:
+
+- **Session tracking:** Each session has a unique ID, creation timestamp, and loop count
+- **Auto-expiry:** Sessions expire after a configurable period (default: 24 hours) to prevent context staleness
+- **Fresh starts:** When a session expires, Ralph creates a new session ID and resets the exit detector
+- **Session history:** Session transitions are logged to `.ralph_session_history` (last 50 transitions kept)
+
+This allows Ralph to maintain context across related work while automatically resetting when appropriate. The session file is configured per-step in `.ralph/configs/default.json` via the `session_file` parameter.
+
+#### Run State Persistence (`.ralph/run_state.json`)
+
+Ralph maintains detailed run state for crash recovery and monitoring:
+
+- **Process tracking:** Records PID, run ID, start time, and last update timestamp
+- **Step tracking:** Tracks current step name, step start time, and last successful step
+- **Task tracking:** Records current task ID and description being worked on
+- **Error tracking:** Stores last error message for debugging failed runs
+- **Atomic writes:** Uses temporary files with atomic rename to prevent corruption
+
+If Ralph crashes or is killed, the run state file contains enough information to understand what was being worked on and where the failure occurred. The loop number and current step help identify exactly where execution stopped.
+
 ## FAQ
 
 ### Do I have to pass a requirements file to `init`?
