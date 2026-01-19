@@ -54,7 +54,7 @@
       "title": "Implement shared test runner in Go",
       "details": "Create internal/eval/testrunner.go with RunSharedTests() that: 1) Parses suite.yaml for test commands, 2) Sets up Python venv if requirements.txt exists, 3) Starts the app in background (app.py/run.py), 4) Waits for app readiness with health check, 5) Runs pytest with EVAL_BASE_URL env var, 6) Parses pytest output for passed/failed counts, 7) Kills app process. Match run_shared_tests.sh behavior.",
       "priority": "medium",
-      "status": "todo",
+      "status": "done",
       "tests": "Integration test with sample app; correct pytest result parsing"
     },
     {
