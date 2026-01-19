@@ -14,7 +14,7 @@
       "title": "Add CONTRIBUTING.md",
       "details": "Create CONTRIBUTING.md covering: how to run tests (go test ./...), code style (go fmt), PR process, local development setup (go install ./cmd/ralph), and pointer to key directories (internal/, cmd/ralph/).",
       "priority": "high",
-      "status": "todo",
+      "status": "done",
       "tests": "CONTRIBUTING.md exists with sections for testing, style, PR process, and local dev setup"
     },
     {
