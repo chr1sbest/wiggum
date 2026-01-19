@@ -10,21 +10,21 @@ import (
 
 // EvalResult represents the results of an evaluation run
 type EvalResult struct {
-	Suite              string    `json:"suite"`
-	Approach           string    `json:"approach"`
-	Model              string    `json:"model"`
-	Timestamp          time.Time `json:"timestamp"`
-	DurationSeconds    int       `json:"duration_seconds"`
-	TotalCalls         int       `json:"total_calls"`
-	InputTokens        int       `json:"input_tokens"`
-	OutputTokens       int       `json:"output_tokens"`
-	TotalTokens        int       `json:"total_tokens"`
-	CostUSD            float64   `json:"cost_usd"`
-	SharedTestsPassed  int       `json:"shared_tests_passed"`
-	SharedTestsTotal   int       `json:"shared_tests_total"`
-	FilesGenerated     int       `json:"files_generated"`
-	LinesGenerated     int       `json:"lines_generated"`
-	OutputDir          string    `json:"output_dir"`
+	Suite             string    `json:"suite"`
+	Approach          string    `json:"approach"`
+	Model             string    `json:"model"`
+	Timestamp         time.Time `json:"timestamp"`
+	DurationSeconds   int       `json:"duration_seconds"`
+	TotalCalls        int       `json:"total_calls"`
+	InputTokens       int       `json:"input_tokens"`
+	OutputTokens      int       `json:"output_tokens"`
+	TotalTokens       int       `json:"total_tokens"`
+	CostUSD           float64   `json:"cost_usd"`
+	SharedTestsPassed int       `json:"shared_tests_passed"`
+	SharedTestsTotal  int       `json:"shared_tests_total"`
+	FilesGenerated    int       `json:"files_generated"`
+	LinesGenerated    int       `json:"lines_generated"`
+	OutputDir         string    `json:"output_dir"`
 }
 
 // SaveToFile saves the eval result to a JSON file in the evals/results directory

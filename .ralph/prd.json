@@ -2,100 +2,108 @@
   "version": 1,
   "tasks": [
     {
-      "id": "T117",
-      "title": "Define eval result types in Go",
-      "details": "Create internal/eval/result.go with types for eval results: EvalResult struct containing suite, approach, model, timestamp, duration_seconds, total_calls, input_tokens, output_tokens, total_tokens, cost_usd, shared_tests_passed, shared_tests_total, files_generated, lines_generated, output_dir. Include JSON tags matching existing format and methods for saving/loading results to/from JSON files.",
+      "id": "T200",
+      "title": "Add LICENSE file (MIT)",
+      "details": "Create LICENSE file in repository root with MIT license text. Include current year and project name.",
       "priority": "high",
       "status": "done",
-      "tests": "go build succeeds; types match existing JSON result format in evals/results/*.json"
+      "tests": "LICENSE file exists at repo root with valid MIT license text"
     },
     {
-      "id": "T118",
-      "title": "Create eval runner config types",
-      "details": "Create internal/eval/config.go with RunConfig struct containing: SuiteName, Approach (ralph|oneshot), Model, TimeoutSeconds, OutputDir. Add validation methods for approach and model. Include constants for default timeout (7200s) and supported approaches.",
+      "id": "T201",
+      "title": "Add CONTRIBUTING.md",
+      "details": "Create CONTRIBUTING.md covering: how to run tests (go test ./...), code style (go fmt), PR process, local development setup (go install ./cmd/ralph), and pointer to key directories (internal/, cmd/ralph/).",
       "priority": "high",
       "status": "done",
-      "tests": "go build succeeds; validation rejects invalid approaches and empty suite names"
+      "tests": "CONTRIBUTING.md exists with sections for testing, style, PR process, and local dev setup"
     },
     {
-      "id": "T119",
-      "title": "Implement temp project directory management",
-      "details": "Create internal/eval/project.go with functions to: 1) Create unique project directory named 'eval-{approach}-{suite}-{model}-{timestamp}', 2) Set up project structure based on approach, 3) Clean up temp directories on request. Handle both ralph (nested suite subdir) and oneshot (flat) structures matching run.sh behavior.",
+      "id": "T202",
+      "title": "Add CODE_OF_CONDUCT.md",
+      "details": "Create CODE_OF_CONDUCT.md using the Contributor Covenant template (https://www.contributor-covenant.org/). Use version 2.1 which is the current standard.",
       "priority": "high",
       "status": "done",
-      "tests": "Unit tests verify correct directory naming, creation, and cleanup"
+      "tests": "CODE_OF_CONDUCT.md exists with Contributor Covenant content"
     },
     {
-      "id": "T120",
-      "title": "Implement ralph approach execution",
-      "details": "In internal/eval/runner.go, implement runRalphApproach() that: 1) Creates project directory with suite subdir, 2) Runs 'ralph init \u003crequirements\u003e' with timeout, 3) Runs 'ralph run -model \u003cmodel\u003e' with timeout, 4) Parses .ralph/run_metrics.json for tokens/cost/calls, 5) Returns EvalResult with metrics. Use exec.CommandContext for timeout support.",
+      "id": "T203",
+      "title": "Add SECURITY.md",
+      "details": "Create SECURITY.md with: supported versions (latest minor only), reporting instructions (GitHub security advisories or maintainer email), and expected response window (e.g., 48-72 hours acknowledgment).",
       "priority": "high",
       "status": "done",
-      "tests": "Integration test with mock ralph commands; metrics correctly parsed from run_metrics.json"
+      "tests": "SECURITY.md exists and GitHub no longer shows 'No security policy detected' warning"
     },
     {
-      "id": "T121",
-      "title": "Implement oneshot approach execution",
-      "details": "In internal/eval/runner.go, implement runOneshotApproach() that: 1) Creates project directory, 2) Builds prompt from requirements content matching run.sh format, 3) Runs 'claude --model \u003cmodel\u003e --dangerously-skip-permissions --output-format json' with prompt via stdin, 4) Parses JSON output for input_tokens, output_tokens, total_cost_usd, 5) Returns EvalResult. Handle timeout and JSON parsing errors gracefully.",
+      "id": "T204",
+      "title": "Add Contributing section to README",
+      "details": "Add a 'Contributing (5 min quickstart)' section near bottom of README.md with: go test ./..., go fmt ./..., local install command, and brief pointer to internal/ and cmd/ralph/ as core logic locations.",
       "priority": "high",
       "status": "done",
-      "tests": "Integration test with mock claude command; token metrics correctly extracted from JSON output"
+      "tests": "README.md contains Contributing section with quickstart commands and directory pointers"
     },
     {
-      "id": "T122",
-      "title": "Implement code metrics collection",
-      "details": "In internal/eval/metrics.go, implement CollectCodeMetrics() that: 1) Counts files matching *.go, *.py, *.md, *.yaml, *.yml, *.mod, *.sum excluding .ralph/ and venv/, 2) Counts lines in *.go and *.py files. Return files_generated and lines_generated. Use filepath.Walk with proper filtering.",
+      "id": "T205",
+      "title": "Add PR template",
+      "details": "Create .github/PULL_REQUEST_TEMPLATE.md with checklist including: tests run, docs updated if needed, description of changes, and 'why' explanation field.",
       "priority": "medium",
       "status": "done",
-      "tests": "Unit tests verify correct file counting with exclusions; line counting accuracy"
+      "tests": "New PRs automatically show template with checklist"
     },
     {
-      "id": "T123",
-      "title": "Implement shared test runner in Go",
-      "details": "Create internal/eval/testrunner.go with RunSharedTests() that: 1) Parses suite.yaml for test commands, 2) Sets up Python venv if requirements.txt exists, 3) Starts the app in background (app.py/run.py), 4) Waits for app readiness with health check, 5) Runs pytest with EVAL_BASE_URL env var, 6) Parses pytest output for passed/failed counts, 7) Kills app process. Match run_shared_tests.sh behavior.",
+      "id": "T206",
+      "title": "Add issue templates",
+      "details": "Create .github/ISSUE_TEMPLATE/ directory with: bug_report.md (expected/actual behavior, repro steps, version info) and feature_request.md (problem statement, proposed solution, acceptance criteria).",
       "priority": "medium",
       "status": "done",
-      "tests": "Integration test with sample app; correct pytest result parsing"
+      "tests": "New issues show template chooser with Bug Report and Feature Request options"
     },
     {
-      "id": "T124",
-      "title": "Implement unified eval runner entry point",
-      "details": "Create internal/eval/runner.go with Run(config RunConfig) (*EvalResult, error) that: 1) Loads suite config, 2) Creates project directory, 3) Dispatches to runRalphApproach or runOneshotApproach based on config, 4) Runs shared tests via testrunner, 5) Collects code metrics, 6) Saves result JSON to evals/results/, 7) Prints formatted summary. Include banner display matching run.sh output.",
-      "priority": "high",
-      "status": "done",
-      "tests": "End-to-end test running both approaches; results JSON saved correctly"
-    },
-    {
-      "id": "T125",
-      "title": "Implement eval comparison in Go",
-      "details": "Create internal/eval/compare.go with Compare(suite, model string) error that: 1) Finds latest result files for ralph and oneshot approaches, 2) Loads EvalResult from each JSON, 3) Calculates percentage differences for duration, tokens, cost, tests, 4) Determines winner per metric (lower is better for cost/time/tokens, higher for tests), 5) Prints formatted comparison table matching compare_evals.sh output.",
+      "id": "T207",
+      "title": "Add Makefile for dev commands",
+      "details": "Create Makefile with targets: test (go test ./...), fmt (gofmt -w .), lint (golangci-lint run if available), build (go build ./cmd/ralph), and ci (runs test + fmt check). Update CONTRIBUTING.md to reference these make targets.",
       "priority": "medium",
       "status": "done",
-      "tests": "Unit test with sample result files; output matches shell script format"
+      "tests": "make test, make fmt, make build all execute successfully; CONTRIBUTING.md references Makefile"
     },
     {
-      "id": "T126",
-      "title": "Update cmd_eval.go to use Go runner",
-      "details": "Modify cmd/ralph/cmd_eval.go to: 1) Replace exec.Command call to run.sh with eval.Run() in evalRunCmd, 2) Replace exec.Command call to compare_evals.sh with eval.Compare() in evalCompareCmd, 3) Remove shell script path construction. Keep all existing flag parsing and validation logic.",
-      "priority": "high",
-      "status": "done",
-      "tests": "'ralph eval run flask --approach ralph' uses Go runner; 'ralph eval compare flask' uses Go comparison"
-    },
-    {
-      "id": "T127",
-      "title": "Add eval runner unit tests",
-      "details": "Create internal/eval/runner_test.go with tests for: 1) RunConfig validation, 2) Project directory creation/cleanup, 3) Result JSON marshaling/unmarshaling, 4) Code metrics collection, 5) Pytest output parsing. Use table-driven tests and test fixtures.",
+      "id": "T208",
+      "title": "Ensure CI matches Makefile targets",
+      "details": "Review and update .github/workflows/ to ensure CI runs: go test ./..., format check, and optionally govulncheck. CI commands should match what's in Makefile so contributors can run 'make ci' locally.",
       "priority": "medium",
       "status": "done",
-      "tests": "go test ./internal/eval/... passes with \u003e80% coverage on new code"
+      "tests": "CI workflow runs same checks as make ci; contributor can replicate CI locally"
     },
     {
-      "id": "T128",
-      "title": "Deprecate shell scripts with notice",
-      "details": "Add deprecation notices to evals/run.sh, evals/compare_evals.sh, and evals/run_shared_tests.sh as comments at the top indicating they are superseded by the Go implementation. Do not delete the scripts yet to allow fallback if needed.",
+      "id": "T209",
+      "title": "Create GitHub labels for contributors",
+      "details": "Add labels to repository: 'good first issue', 'help wanted', 'area:cli', 'area:prompts', 'area:evals', 'area:loop', 'documentation', 'enhancement', 'bug'.",
       "priority": "low",
       "status": "done",
-      "tests": "Shell scripts have deprecation comment; Go implementation is used by default"
+      "tests": "Labels exist in GitHub repository settings"
+    },
+    {
+      "id": "T210",
+      "title": "Seed good first issues",
+      "details": "Create 3-5 small issues tagged 'good first issue': docs improvements, adding new example requirements file, CLI help text improvements, adding tests for uncovered code paths.",
+      "priority": "low",
+      "status": "done",
+      "tests": "At least 3 open issues with 'good first issue' label exist"
+    },
+    {
+      "id": "T211",
+      "title": "Enhance ARCHITECTURE.md for contributors",
+      "details": "Update existing ARCHITECTURE.md to include: 'where to change what' map for common modifications, entrypoint flow explanation, config/prompts locations, and safety guardrails documentation (loop limits, unsafe mode implications).",
+      "priority": "low",
+      "status": "done",
+      "tests": "ARCHITECTURE.md includes contributor-focused 'where to change what' section"
+    },
+    {
+      "id": "T212",
+      "title": "Add RELEASING.md",
+      "details": "Create RELEASING.md documenting: semantic versioning policy, how releases are cut (tags, GitHub releases), how Homebrew tap updates happen, and any automation involved.",
+      "priority": "low",
+      "status": "done",
+      "tests": "RELEASING.md exists with versioning policy and release process documentation"
     }
   ]
 }

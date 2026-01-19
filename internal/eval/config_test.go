@@ -27,9 +27,9 @@ func TestNewRunConfig(t *testing.T) {
 
 func TestValidateApproach(t *testing.T) {
 	tests := []struct {
-		name      string
-		approach  string
-		wantErr   bool
+		name       string
+		approach   string
+		wantErr    bool
 		normalized string
 	}{
 		{"valid ralph lowercase", "ralph", false, "ralph"},

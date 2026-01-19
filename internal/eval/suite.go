@@ -10,13 +10,13 @@ import (
 
 // SuiteConfig represents the configuration for an evaluation suite
 type SuiteConfig struct {
-	Name         string       `yaml:"name"`
-	Description  string       `yaml:"description"`
-	Requirements string       `yaml:"requirements"`
-	Language     string       `yaml:"language"`
-	Timeout      string       `yaml:"timeout"`
-	Setup        []string     `yaml:"setup"`
-	Tests        TestsConfig  `yaml:"tests"`
+	Name         string      `yaml:"name"`
+	Description  string      `yaml:"description"`
+	Requirements string      `yaml:"requirements"`
+	Language     string      `yaml:"language"`
+	Timeout      string      `yaml:"timeout"`
+	Setup        []string    `yaml:"setup"`
+	Tests        TestsConfig `yaml:"tests"`
 }
 
 // TestsConfig represents the test configuration section

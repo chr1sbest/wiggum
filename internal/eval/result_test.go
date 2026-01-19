@@ -58,21 +58,21 @@ func TestSaveAndLoad(t *testing.T) {
 	os.Chdir(tmpDir)
 
 	result := &EvalResult{
-		Suite:              "test-suite",
-		Approach:           "ralph",
-		Model:              "sonnet",
-		Timestamp:          time.Now(),
-		DurationSeconds:    300,
-		TotalCalls:         5,
-		InputTokens:        1000,
-		OutputTokens:       500,
-		TotalTokens:        1500,
-		CostUSD:            0.75,
-		SharedTestsPassed:  10,
-		SharedTestsTotal:   12,
-		FilesGenerated:     5,
-		LinesGenerated:     100,
-		OutputDir:          "/tmp/eval-test",
+		Suite:             "test-suite",
+		Approach:          "ralph",
+		Model:             "sonnet",
+		Timestamp:         time.Now(),
+		DurationSeconds:   300,
+		TotalCalls:        5,
+		InputTokens:       1000,
+		OutputTokens:      500,
+		TotalTokens:       1500,
+		CostUSD:           0.75,
+		SharedTestsPassed: 10,
+		SharedTestsTotal:  12,
+		FilesGenerated:    5,
+		LinesGenerated:    100,
+		OutputDir:         "/tmp/eval-test",
 	}
 
 	// Save to file

@@ -214,3 +214,33 @@ Claude output logs are written to `.ralph/logs/`:
 ### Claude usage limit / rate limit
 
 If you hit a quota limit, wait for your quota to reset and rerun `ralph run`.
+
+## Contributing (5 min quickstart)
+
+Contributions welcome! Here's how to get started:
+
+```bash
+# Run tests
+make test
+
+# Format code
+make fmt
+
+# Run all CI checks (tests + format check)
+make ci
+
+# Install locally for testing
+make install
+```
+
+We provide a Makefile for common dev tasks. Run `make help` to see all available targets.
+
+**Key directories:**
+- `cmd/ralph/` - CLI entry point and command routing
+- `internal/` - Core logic (loop engine, PRD management, session control)
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for full guidelines including PR process and code style requirements.
+
+## License
+
+MIT License - see [LICENSE](LICENSE) file for details.

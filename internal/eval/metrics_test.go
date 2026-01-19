@@ -8,11 +8,11 @@ import (
 
 func TestCollectCodeMetrics(t *testing.T) {
 	tests := []struct {
-		name          string
-		setup         func(dir string) error
-		wantFiles     int
-		wantLines     int
-		wantErr       bool
+		name      string
+		setup     func(dir string) error
+		wantFiles int
+		wantLines int
+		wantErr   bool
 	}{
 		{
 			name: "empty directory",
@@ -45,14 +45,14 @@ func TestCollectCodeMetrics(t *testing.T) {
 			name: "multiple file types",
 			setup: func(dir string) error {
 				files := map[string]string{
-					"main.go":       "package main\n\nfunc main() {}\n",          // 3 lines
-					"app.py":        "def main():\n    pass\n",                    // 2 lines
-					"README.md":     "# Project\n\nDescription\n",                 // counted but not for lines
-					"config.yaml":   "key: value\n",                               // counted but not for lines
-					"config.yml":    "another: value\n",                           // counted but not for lines
-					"go.mod":        "module test\n",                              // counted but not for lines
-					"go.sum":        "checksum here\n",                            // counted but not for lines
-					"other.txt":     "not counted\n",                              // not counted
+					"main.go":     "package main\n\nfunc main() {}\n", // 3 lines
+					"app.py":      "def main():\n    pass\n",          // 2 lines
+					"README.md":   "# Project\n\nDescription\n",       // counted but not for lines
+					"config.yaml": "key: value\n",                     // counted but not for lines
+					"config.yml":  "another: value\n",                 // counted but not for lines
+					"go.mod":      "module test\n",                    // counted but not for lines
+					"go.sum":      "checksum here\n",                  // counted but not for lines
+					"other.txt":   "not counted\n",                    // not counted
 				}
 				for name, content := range files {
 					if err := os.WriteFile(filepath.Join(dir, name), []byte(content), 0644); err != nil {
