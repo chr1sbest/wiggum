@@ -241,25 +241,29 @@ func parseGeneratedPRD(response string) string {
 
 // forceTaskStatusTodo ensures all tasks have status "todo"
 func forceTaskStatusTodo(prdJSON string) string {
-	var prd map[string]interface{}
+	// For simple cases without tasks, return as-is
+	var testStruct struct {
+		Version int `json:"version"`
+	}
+	if err := json.Unmarshal([]byte(prdJSON), &testStruct); err == nil {
+		var rawMap map[string]interface{}
+		if err := json.Unmarshal([]byte(prdJSON), &rawMap); err == nil {
+			if _, hasTasks := rawMap["tasks"]; !hasTasks {
+				return prdJSON
+			}
+		}
+	}
+
+	var prd prdFile
 	if err := json.Unmarshal([]byte(prdJSON), &prd); err != nil {
 		return prdJSON // Return as-is if can't parse
 	}
 
-	tasks, ok := prd["tasks"].([]interface{})
-	if !ok {
-		return prdJSON
+	for i := range prd.Tasks {
+		prd.Tasks[i].Status = "todo"
 	}
 
-	for _, t := range tasks {
-		task, ok := t.(map[string]interface{})
-		if !ok {
-			continue
-		}
-		task["status"] = "todo"
-	}
-
-	out, err := json.MarshalIndent(prd, "", "  ")
+	out, err := json.Marshal(prd)
 	if err != nil {
 		return prdJSON
 	}
@@ -463,18 +467,25 @@ func initExistingRepo(projectName, model string) {
 }
 
 func parseExploreRequirements(response string) string {
-	marker := "---FILE: requirements.md---"
+	marker := "---SUMMARY---"
 	idx := strings.Index(response, marker)
 	if idx == -1 {
-		return ""
+		// Fallback to old marker for compatibility
+		marker = "---FILE: requirements.md---"
+		idx = strings.Index(response, marker)
+		if idx == -1 {
+			return ""
+		}
 	}
 	content := response[idx+len(marker):]
 
-	// Find the end (next file marker or end of string)
-	endMarker := "---FILE:"
-	endIdx := strings.Index(content, endMarker)
-	if endIdx != -1 {
-		content = content[:endIdx]
+	// Find the end (next marker or end of string)
+	for _, endMarker := range []string{"---SUMMARY---", "---FILE:"} {
+		endIdx := strings.Index(content, endMarker)
+		if endIdx != -1 {
+			content = content[:endIdx]
+			break
+		}
 	}
 
 	return strings.TrimSpace(content)
