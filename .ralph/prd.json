@@ -30,7 +30,7 @@
       "title": "Implement ralph approach execution",
       "details": "In internal/eval/runner.go, implement runRalphApproach() that: 1) Creates project directory with suite subdir, 2) Runs 'ralph init \u003crequirements\u003e' with timeout, 3) Runs 'ralph run -model \u003cmodel\u003e' with timeout, 4) Parses .ralph/run_metrics.json for tokens/cost/calls, 5) Returns EvalResult with metrics. Use exec.CommandContext for timeout support.",
       "priority": "high",
-      "status": "todo",
+      "status": "done",
       "tests": "Integration test with mock ralph commands; metrics correctly parsed from run_metrics.json"
     },
     {
