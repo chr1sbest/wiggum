@@ -419,9 +419,15 @@ func (s *AgentStep) saveOutput(logDir, output string, loopCount int) {
 		return
 	}
 
+	// Strip STDERR section if present (Claude CLI appends this after JSON)
+	jsonOutput := output
+	if idx := strings.Index(output, "\n--- STDERR ---"); idx != -1 {
+		jsonOutput = strings.TrimSpace(output[:idx])
+	}
+
 	// Try to parse as JSON
 	var jsonData map[string]interface{}
-	if err := json.Unmarshal([]byte(output), &jsonData); err == nil {
+	if err := json.Unmarshal([]byte(jsonOutput), &jsonData); err == nil {
 		// Valid JSON - save to loop_N.json
 		jsonPath := filepath.Join(logDir, fmt.Sprintf("loop_%d.json", loopCount))
 		if err := os.WriteFile(jsonPath, []byte(output), 0644); err != nil {

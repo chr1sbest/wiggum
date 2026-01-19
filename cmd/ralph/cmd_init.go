@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 )
@@ -167,6 +168,16 @@ Examples:
 		}
 	}
 
+	// Initialize git if no .git exists (new project)
+	if _, err := os.Stat(".git"); os.IsNotExist(err) {
+		if err := runGitInit(); err != nil {
+			fmt.Fprintf(os.Stderr, "Warning: failed to initialize git: %v\n", err)
+		}
+	}
+
+	// Add .ralph/ to .gitignore BEFORE creating files (so git never tracks them)
+	appendToGitignore(".ralph/")
+
 	configContent, err := renderDefaultLoopConfig(DefaultLoopConfigOptions{
 		RepoDir:           ".",
 		SetupPromptFile:   ".ralph/prompts/SETUP_PROMPT.md",
@@ -213,9 +224,6 @@ Examples:
 		fmt.Fprintf(os.Stderr, "Failed to create prd.json: %v\n", err)
 		os.Exit(1)
 	}
-
-	// Append .ralph/ to .gitignore if not already present
-	appendToGitignore(".ralph/")
 
 	taskCount := strings.Count(prdContent, "\"id\"")
 
@@ -268,6 +276,14 @@ func forceTaskStatusTodo(prdJSON string) string {
 		return prdJSON
 	}
 	return string(out)
+}
+
+// runGitInit initializes a new git repository
+func runGitInit() error {
+	cmd := exec.Command("git", "init")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	return cmd.Run()
 }
 
 // appendToGitignore adds an entry to .gitignore if not already present
@@ -402,6 +418,9 @@ func initExistingRepo(projectName, model string) {
 		}
 	}
 
+	// Add .ralph/ to .gitignore BEFORE creating files (so git never tracks them)
+	appendToGitignore(".ralph/")
+
 	// Write default config
 	configContent, err := renderDefaultLoopConfig(DefaultLoopConfigOptions{
 		RepoDir:           ".",
@@ -452,8 +471,6 @@ func initExistingRepo(projectName, model string) {
 		fmt.Fprintf(os.Stderr, "Failed to create prd.json: %v\n", err)
 		os.Exit(1)
 	}
-
-	appendToGitignore(".ralph/")
 
 	cwd, _ := os.Getwd()
 
