@@ -34,24 +34,19 @@ brew install ralph
 
 ## Usage
 
-Write requirements in an .md file (see /examples) then have Ralph get to work.
-
-```bash
-# Create a new project directory
-mkdir myproject && cd myproject
-
-# Initialize Ralph with your requirements
-ralph init requirements.md
-
-# Run the Ralph loop
-ralph run
-```
-
 Ralph works like `git init` — run it in the directory where you want to work. It creates a `.ralph/` folder with your task list and configuration, and adds `.ralph/` to your `.gitignore`.
 
-### Examples
+### New Projects
 
-- `examples/flask_requirements.md` - minimal Flask webapp to display the current day
+Write requirements in a markdown file (see `examples/`) then have Ralph build it from scratch:
+
+```bash
+mkdir myproject && cd myproject
+ralph init requirements.md    # Creates .ralph/ and generates tasks
+ralph run                     # Ralph builds the project
+```
+
+**Example:**
 
 ```bash
 mkdir flasky && cd flasky
@@ -59,9 +54,9 @@ ralph init ../examples/flask_requirements.md
 ralph run
 ```
 
-### Attach to existing project
+### Existing Projects
 
-Ralph works with existing codebases too. Just run `ralph init` without a requirements file — Ralph will explore the codebase and generate a summary:
+Ralph works with existing codebases too. Run `ralph init` without a requirements file — Ralph will explore the codebase and generate a summary:
 
 ```bash
 cd my-existing-repo
@@ -148,7 +143,7 @@ your-project/
 
 ### Do I have to pass a requirements file to `init`?
 
-Yes. `init` requires a markdown requirements file.
+No. For new projects, pass a requirements file. For existing projects, run `ralph init` without arguments — Ralph will explore and summarize the codebase.
 
 ### I ran `ralph run` and it says files are missing
 
