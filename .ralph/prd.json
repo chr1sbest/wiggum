@@ -70,7 +70,7 @@
       "title": "Implement eval comparison in Go",
       "details": "Create internal/eval/compare.go with Compare(suite, model string) error that: 1) Finds latest result files for ralph and oneshot approaches, 2) Loads EvalResult from each JSON, 3) Calculates percentage differences for duration, tokens, cost, tests, 4) Determines winner per metric (lower is better for cost/time/tokens, higher for tests), 5) Prints formatted comparison table matching compare_evals.sh output.",
       "priority": "medium",
-      "status": "todo",
+      "status": "done",
       "tests": "Unit test with sample result files; output matches shell script format"
     },
     {
