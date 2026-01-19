@@ -102,7 +102,7 @@
       "title": "Add RELEASING.md",
       "details": "Create RELEASING.md documenting: semantic versioning policy, how releases are cut (tags, GitHub releases), how Homebrew tap updates happen, and any automation involved.",
       "priority": "low",
-      "status": "todo",
+      "status": "done",
       "tests": "RELEASING.md exists with versioning policy and release process documentation"
     }
   ]
