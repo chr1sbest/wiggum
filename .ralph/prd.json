@@ -46,7 +46,7 @@
       "title": "Implement code metrics collection",
       "details": "In internal/eval/metrics.go, implement CollectCodeMetrics() that: 1) Counts files matching *.go, *.py, *.md, *.yaml, *.yml, *.mod, *.sum excluding .ralph/ and venv/, 2) Counts lines in *.go and *.py files. Return files_generated and lines_generated. Use filepath.Walk with proper filtering.",
       "priority": "medium",
-      "status": "todo",
+      "status": "done",
       "tests": "Unit tests verify correct file counting with exclusions; line counting accuracy"
     },
     {
