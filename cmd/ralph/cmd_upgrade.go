@@ -144,7 +144,7 @@ func fetchLatestVersion() (string, error) {
 	if err := json.NewDecoder(resp.Body).Decode(&r); err != nil {
 		return "", err
 	}
-	return strings.TrimSpace(strings.TrimPrefix(r.TagName, "v")), nil
+	return strings.TrimSpace(r.TagName), nil
 }
 
 func fetchLatestVersionFromTagsOrGo() (string, error) {
@@ -180,7 +180,7 @@ func fetchLatestVersionFromTags() (string, error) {
 	}
 	best := ""
 	for _, t := range tags {
-		v := strings.TrimSpace(strings.TrimPrefix(t.Name, "v"))
+		v := strings.TrimSpace(t.Name)
 		if v == "" {
 			continue
 		}
@@ -211,7 +211,7 @@ func fetchLatestVersionFromGo() (string, error) {
 	}
 	best := ""
 	for _, raw := range m.Versions {
-		v := strings.TrimSpace(strings.TrimPrefix(raw, "v"))
+		v := strings.TrimSpace(raw)
 		if v == "" {
 			continue
 		}
