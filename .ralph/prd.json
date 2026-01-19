@@ -2,132 +2,100 @@
   "version": 1,
   "tasks": [
     {
-      "id": "T101",
-      "title": "Create suite.yaml for logagg suite",
-      "details": "Create evals/suites/logagg/suite.yaml config file for the existing log aggregator test suite. Include name, description, requirements path (examples/log_aggregator_requirements.md), language (go), timeout, and test commands referencing the existing run_tests.sh.",
+      "id": "T117",
+      "title": "Define eval result types in Go",
+      "details": "Create internal/eval/result.go with types for eval results: EvalResult struct containing suite, approach, model, timestamp, duration_seconds, total_calls, input_tokens, output_tokens, total_tokens, cost_usd, shared_tests_passed, shared_tests_total, files_generated, lines_generated, output_dir. Include JSON tags matching existing format and methods for saving/loading results to/from JSON files.",
       "priority": "high",
       "status": "done",
-      "tests": "suite.yaml exists at evals/suites/logagg/suite.yaml with valid YAML structure containing name, description, requirements, language, and tests fields"
+      "tests": "go build succeeds; types match existing JSON result format in evals/results/*.json"
     },
     {
-      "id": "T102",
-      "title": "Create suite.yaml for flask suite",
-      "details": "Create evals/suites/flask/suite.yaml config file for the Flask test suite. Include name, description, requirements path (examples/flask_requirements.md), language (python), timeout, setup commands, and test commands.",
+      "id": "T118",
+      "title": "Create eval runner config types",
+      "details": "Create internal/eval/config.go with RunConfig struct containing: SuiteName, Approach (ralph|oneshot), Model, TimeoutSeconds, OutputDir. Add validation methods for approach and model. Include constants for default timeout (7200s) and supported approaches.",
       "priority": "high",
-      "status": "done",
-      "tests": "suite.yaml exists at evals/suites/flask/suite.yaml with valid YAML structure"
+      "status": "todo",
+      "tests": "go build succeeds; validation rejects invalid approaches and empty suite names"
     },
     {
-      "id": "T103",
-      "title": "Create suite.yaml for tasktracker suite",
-      "details": "Create evals/suites/tasktracker/suite.yaml config file for the Task Tracker API test suite. Include name, description (REST API with JWT auth, 4 models, ~15 endpoints), requirements path (examples/task_tracker_requirements.md), language (python), timeout (2h), setup commands, and test commands.",
+      "id": "T119",
+      "title": "Implement temp project directory management",
+      "details": "Create internal/eval/project.go with functions to: 1) Create unique project directory named 'eval-{approach}-{suite}-{model}-{timestamp}', 2) Set up project structure based on approach, 3) Clean up temp directories on request. Handle both ralph (nested suite subdir) and oneshot (flat) structures matching run.sh behavior.",
       "priority": "high",
-      "status": "done",
-      "tests": "suite.yaml exists at evals/suites/tasktracker/suite.yaml with valid YAML structure"
+      "status": "todo",
+      "tests": "Unit tests verify correct directory naming, creation, and cleanup"
     },
     {
-      "id": "T104",
-      "title": "Create Go YAML loader for suite configs",
-      "details": "Create internal/eval/suite.go with SuiteConfig struct and LoadSuite(suiteName string) function to parse suite.yaml files. Use gopkg.in/yaml.v3. Struct should include: Name, Description, Requirements, Language, Timeout, Setup []string, Tests struct with Shared []string.",
+      "id": "T120",
+      "title": "Implement ralph approach execution",
+      "details": "In internal/eval/runner.go, implement runRalphApproach() that: 1) Creates project directory with suite subdir, 2) Runs 'ralph init \u003crequirements\u003e' with timeout, 3) Runs 'ralph run -model \u003cmodel\u003e' with timeout, 4) Parses .ralph/run_metrics.json for tokens/cost/calls, 5) Returns EvalResult with metrics. Use exec.CommandContext for timeout support.",
       "priority": "high",
-      "status": "done",
-      "tests": "go build succeeds; unit test loads sample suite.yaml and verifies all fields parsed correctly"
+      "status": "todo",
+      "tests": "Integration test with mock ralph commands; metrics correctly parsed from run_metrics.json"
     },
     {
-      "id": "T105",
-      "title": "Update run.sh to read from suite.yaml",
-      "details": "Modify evals/run.sh to read requirements path and test commands from suite.yaml instead of the hardcoded case statement. Use yq or simple grep/sed to parse YAML. Fall back to existing behavior if suite.yaml doesn't exist for backwards compatibility.",
+      "id": "T121",
+      "title": "Implement oneshot approach execution",
+      "details": "In internal/eval/runner.go, implement runOneshotApproach() that: 1) Creates project directory, 2) Builds prompt from requirements content matching run.sh format, 3) Runs 'claude --model \u003cmodel\u003e --dangerously-skip-permissions --output-format json' with prompt via stdin, 4) Parses JSON output for input_tokens, output_tokens, total_cost_usd, 5) Returns EvalResult. Handle timeout and JSON parsing errors gracefully.",
       "priority": "high",
-      "status": "done",
-      "tests": "./evals/run.sh logagg ralph works by reading from suite.yaml; existing behavior preserved if no suite.yaml"
+      "status": "todo",
+      "tests": "Integration test with mock claude command; token metrics correctly extracted from JSON output"
     },
     {
-      "id": "T106",
-      "title": "Standardize result JSON schema in run.sh",
-      "details": "Update evals/run.sh to output results in the standardized JSON format: {suite, approach, model, timestamp (ISO 8601), duration_seconds, total_calls, input_tokens, output_tokens, total_tokens, cost_usd, shared_tests_passed, shared_tests_total, files_generated, lines_generated, output_dir}. Save to evals/results/\u003csuite\u003e-\u003capproach\u003e-\u003cmodel\u003e-\u003ctimestamp\u003e.json.",
-      "priority": "high",
-      "status": "done",
-      "tests": "Running an eval produces JSON file in evals/results/ with all required fields in correct format"
-    },
-    {
-      "id": "T107",
-      "title": "Add ralph eval subcommand to main.go",
-      "details": "Add 'eval' case to the switch statement in cmd/ralph/main.go that calls evalCmd(os.Args[2:]). Update printUsage() to include eval command with description 'Run evaluation suites against ralph and oneshot approaches'.",
-      "priority": "high",
-      "status": "done",
-      "tests": "ralph eval shows help; ralph help includes eval command"
-    },
-    {
-      "id": "T108",
-      "title": "Create cmd_eval.go with eval subcommands",
-      "details": "Create cmd/ralph/cmd_eval.go implementing evalCmd() that routes to: 'run' (calls evals/run.sh with args), 'compare' (calls evals/compare_evals.sh), 'list' (discovers suites by scanning evals/suites/*/suite.yaml). Parse flags: --approach, --model for run subcommand.",
-      "priority": "high",
-      "status": "done",
-      "tests": "ralph eval list shows available suites; ralph eval run flask --approach ralph executes run.sh; ralph eval compare flask executes compare_evals.sh"
-    },
-    {
-      "id": "T109",
-      "title": "Update compare_evals.sh for new result format",
-      "details": "Update evals/compare_evals.sh to read the standardized JSON result format. Add logic to find latest results for a suite by pattern matching filenames in evals/results/.",
+      "id": "T122",
+      "title": "Implement code metrics collection",
+      "details": "In internal/eval/metrics.go, implement CollectCodeMetrics() that: 1) Counts files matching *.go, *.py, *.md, *.yaml, *.yml, *.mod, *.sum excluding .ralph/ and venv/, 2) Counts lines in *.go and *.py files. Return files_generated and lines_generated. Use filepath.Walk with proper filtering.",
       "priority": "medium",
-      "status": "done",
-      "tests": "compare_evals.sh correctly parses new JSON format and extracts all metrics"
+      "status": "todo",
+      "tests": "Unit tests verify correct file counting with exclusions; line counting accuracy"
     },
     {
-      "id": "T110",
-      "title": "Improve comparison table output format",
-      "details": "Update evals/compare_evals.sh to print a formatted ASCII table with box-drawing characters. Show columns: Metric, Ralph, Oneshot, Winner. Include percentage difference in Winner column. Add summary line at bottom.",
+      "id": "T123",
+      "title": "Implement shared test runner in Go",
+      "details": "Create internal/eval/testrunner.go with RunSharedTests() that: 1) Parses suite.yaml for test commands, 2) Sets up Python venv if requirements.txt exists, 3) Starts the app in background (app.py/run.py), 4) Waits for app readiness with health check, 5) Runs pytest with EVAL_BASE_URL env var, 6) Parses pytest output for passed/failed counts, 7) Kills app process. Match run_shared_tests.sh behavior.",
       "priority": "medium",
-      "status": "done",
-      "tests": "Running compare_evals.sh produces formatted table matching spec with Duration, Total Tokens, Cost, Shared Tests rows and percentage differences"
+      "status": "todo",
+      "tests": "Integration test with sample app; correct pytest result parsing"
     },
     {
-      "id": "T111",
-      "title": "Create tasktracker pytest fixtures",
-      "details": "Create evals/suites/tasktracker/tests/conftest.py with pytest fixtures for API testing. Include: base_url fixture (default localhost:8000), auth_headers fixture that registers a user and returns JWT token, api_client fixture using requests session.",
+      "id": "T124",
+      "title": "Implement unified eval runner entry point",
+      "details": "Create internal/eval/runner.go with Run(config RunConfig) (*EvalResult, error) that: 1) Loads suite config, 2) Creates project directory, 3) Dispatches to runRalphApproach or runOneshotApproach based on config, 4) Runs shared tests via testrunner, 5) Collects code metrics, 6) Saves result JSON to evals/results/, 7) Prints formatted summary. Include banner display matching run.sh output.",
+      "priority": "high",
+      "status": "todo",
+      "tests": "End-to-end test running both approaches; results JSON saved correctly"
+    },
+    {
+      "id": "T125",
+      "title": "Implement eval comparison in Go",
+      "details": "Create internal/eval/compare.go with Compare(suite, model string) error that: 1) Finds latest result files for ralph and oneshot approaches, 2) Loads EvalResult from each JSON, 3) Calculates percentage differences for duration, tokens, cost, tests, 4) Determines winner per metric (lower is better for cost/time/tokens, higher for tests), 5) Prints formatted comparison table matching compare_evals.sh output.",
       "priority": "medium",
-      "status": "done",
-      "tests": "conftest.py exists with base_url, auth_headers, and api_client fixtures; pytest can import fixtures"
+      "status": "todo",
+      "tests": "Unit test with sample result files; output matches shell script format"
     },
     {
-      "id": "T112",
-      "title": "Create tasktracker auth tests",
-      "details": "Create evals/suites/tasktracker/tests/test_auth.py with 5-7 tests covering: user registration, login returns JWT, invalid credentials rejected, protected routes require auth, token refresh if applicable. Tests should be implementation-agnostic.",
+      "id": "T126",
+      "title": "Update cmd_eval.go to use Go runner",
+      "details": "Modify cmd/ralph/cmd_eval.go to: 1) Replace exec.Command call to run.sh with eval.Run() in evalRunCmd, 2) Replace exec.Command call to compare_evals.sh with eval.Compare() in evalCompareCmd, 3) Remove shell script path construction. Keep all existing flag parsing and validation logic.",
+      "priority": "high",
+      "status": "todo",
+      "tests": "'ralph eval run flask --approach ralph' uses Go runner; 'ralph eval compare flask' uses Go comparison"
+    },
+    {
+      "id": "T127",
+      "title": "Add eval runner unit tests",
+      "details": "Create internal/eval/runner_test.go with tests for: 1) RunConfig validation, 2) Project directory creation/cleanup, 3) Result JSON marshaling/unmarshaling, 4) Code metrics collection, 5) Pytest output parsing. Use table-driven tests and test fixtures.",
       "priority": "medium",
-      "status": "done",
-      "tests": "test_auth.py contains at least 5 test functions; tests validate API contract not implementation details"
+      "status": "todo",
+      "tests": "go test ./internal/eval/... passes with \u003e80% coverage on new code"
     },
     {
-      "id": "T113",
-      "title": "Create tasktracker CRUD tests",
-      "details": "Create evals/suites/tasktracker/tests/test_tasks.py with 8-10 tests covering: create task, list tasks, get task by id, update task, delete task, filter by status, task belongs to user, invalid task id handling. Tests should be implementation-agnostic.",
-      "priority": "medium",
-      "status": "done",
-      "tests": "test_tasks.py contains at least 8 test functions covering CRUD operations on tasks endpoint"
-    },
-    {
-      "id": "T114",
-      "title": "Create flask test suite directory and tests",
-      "details": "Create evals/suites/flask/tests/ directory with conftest.py and test files. Include 5-10 pytest tests covering basic Flask app functionality based on flask_requirements.md: health endpoint, basic routes, request handling.",
-      "priority": "medium",
-      "status": "done",
-      "tests": "evals/suites/flask/tests/ exists with conftest.py and test_*.py files; pytest discovers and can run tests"
-    },
-    {
-      "id": "T115",
-      "title": "Ensure evals/results/ is gitignored",
-      "details": "Add evals/results/ to .gitignore if not already present. Create the directory if it doesn't exist. Ensure result JSON files are not committed.",
+      "id": "T128",
+      "title": "Deprecate shell scripts with notice",
+      "details": "Add deprecation notices to evals/run.sh, evals/compare_evals.sh, and evals/run_shared_tests.sh as comments at the top indicating they are superseded by the Go implementation. Do not delete the scripts yet to allow fallback if needed.",
       "priority": "low",
-      "status": "done",
-      "tests": "evals/results/ in .gitignore; git status does not show result JSON files as untracked"
-    },
-    {
-      "id": "T116",
-      "title": "Update evals README documentation",
-      "details": "Update evals/README.md to document: new suite.yaml format, ralph eval CLI usage (list, run, compare), result JSON schema, how to add a new suite. Include examples.",
-      "priority": "low",
-      "status": "done",
-      "tests": "README.md documents suite.yaml format, ralph eval commands, and how to add new suites"
+      "status": "todo",
+      "tests": "Shell scripts have deprecation comment; Go implementation is used by default"
     }
   ]
 }
