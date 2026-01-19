@@ -110,7 +110,7 @@
       "title": "Create flask test suite directory and tests",
       "details": "Create evals/suites/flask/tests/ directory with conftest.py and test files. Include 5-10 pytest tests covering basic Flask app functionality based on flask_requirements.md: health endpoint, basic routes, request handling.",
       "priority": "medium",
-      "status": "todo",
+      "status": "done",
       "tests": "evals/suites/flask/tests/ exists with conftest.py and test_*.py files; pytest discovers and can run tests"
     },
     {
