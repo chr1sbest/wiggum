@@ -83,8 +83,12 @@ func RunSharedTests(projectDir string, suite *SuiteConfig, port int) (*TestResul
 		return nil, err
 	}
 
-	// Run pytest
-	suiteDir := filepath.Join("evals", "suites", suite.Name)
+	// Run pytest - need absolute path since we run from project dir
+	cwd, err := os.Getwd()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get working directory: %w", err)
+	}
+	suiteDir := filepath.Join(cwd, "evals", "suites", suite.Name)
 	result, err := runPytest(appDir, suiteDir, port)
 	if err != nil {
 		return nil, err

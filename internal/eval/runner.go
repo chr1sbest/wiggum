@@ -8,6 +8,8 @@ import (
 	"os/exec"
 	"path/filepath"
 	"time"
+
+	"github.com/chr1sbest/wiggum/internal/tracker"
 )
 
 // RunMetrics represents the metrics stored in .ralph/run_metrics.json
@@ -284,38 +286,24 @@ Create all the files now.`, string(requirementsContent))
 }
 
 // parseClaudeOutput reads and parses the JSON output from Claude CLI.
-// The output file may contain multiple lines; we look for the last valid JSON line.
+// Uses the shared tracker.ParseClaudeUsageFromOutput helper which handles
+// stderr filtering, nested JSON structures, and cache tokens.
 func parseClaudeOutput(outputPath string) (*ClaudeOutput, error) {
 	data, err := os.ReadFile(outputPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read output file: %w", err)
 	}
 
-	// The output may have multiple lines; find the last line that starts with '{'
-	lines := string(data)
-	var lastJSONLine string
-	for i := len(lines) - 1; i >= 0; i-- {
-		if lines[i] == '{' {
-			// Found the start of a JSON object, extract from here to end or newline
-			end := i + 1
-			for end < len(lines) && lines[end] != '\n' {
-				end++
-			}
-			lastJSONLine = lines[i:end]
-			break
-		}
+	usage, ok := tracker.ParseClaudeUsageFromOutput(string(data))
+	if !ok {
+		return nil, fmt.Errorf("no usage data found in output")
 	}
 
-	if lastJSONLine == "" {
-		return nil, fmt.Errorf("no JSON output found in file")
-	}
-
-	var output ClaudeOutput
-	if err := json.Unmarshal([]byte(lastJSONLine), &output); err != nil {
-		return nil, fmt.Errorf("failed to parse JSON output: %w", err)
-	}
-
-	return &output, nil
+	return &ClaudeOutput{
+		InputTokens:  usage.InputTokens,
+		OutputTokens: usage.OutputTokens,
+		TotalCostUSD: usage.CostUSD,
+	}, nil
 }
 
 // Run executes a complete evaluation run with the given configuration.
