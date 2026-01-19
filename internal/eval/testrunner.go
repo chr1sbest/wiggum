@@ -3,6 +3,7 @@ package eval
 import (
 	"bufio"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -24,7 +25,7 @@ type TestResult struct {
 }
 
 // RunSharedTests executes the shared test suite for a project.
-// It sets up the environment, starts the app, runs tests, and returns the results.
+// It sets up the environment, starts the app (for web apps), runs tests, and returns the results.
 func RunSharedTests(projectDir string, suite *SuiteConfig, port int) (*TestResult, error) {
 	if port == 0 {
 		port = 8000 // Default port
@@ -40,7 +41,12 @@ func RunSharedTests(projectDir string, suite *SuiteConfig, port int) (*TestResul
 	fmt.Printf("Port:    %d\n", port)
 	fmt.Println("")
 
-	// Find the actual app directory (handle nested dirs for ralph approach)
+	// Check if this is a CLI tool suite (uses shell script tests)
+	if isCLIToolSuite(suite) {
+		return runCLITests(projectDir, suite)
+	}
+
+	// Web app flow: find app, setup, start server, run pytest
 	appDir, err := findAppDirectory(projectDir)
 	if err != nil {
 		return nil, err
@@ -100,6 +106,147 @@ func RunSharedTests(projectDir string, suite *SuiteConfig, port int) (*TestResul
 	fmt.Println("═══════════════════════════════════════════════════════════════")
 
 	return result, nil
+}
+
+// isCLIToolSuite checks if the suite is for a CLI tool (uses shell script tests)
+func isCLIToolSuite(suite *SuiteConfig) bool {
+	if len(suite.Tests.Shared) == 0 {
+		return false
+	}
+	// Check if the test command is a shell script
+	return strings.HasSuffix(suite.Tests.Shared[0], ".sh")
+}
+
+// runCLITests runs tests for CLI tool suites using shell scripts
+func runCLITests(projectDir string, suite *SuiteConfig) (*TestResult, error) {
+	fmt.Println("Detected CLI tool suite, running shell script tests...")
+
+	// Find the actual project directory (handle nested dirs)
+	appDir, err := findCLIAppDirectory(projectDir, suite.Language)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get absolute path to the test script
+	cwd, err := os.Getwd()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get working directory: %w", err)
+	}
+	scriptPath := filepath.Join(cwd, suite.Tests.Shared[0])
+
+	// Make script executable
+	if err := os.Chmod(scriptPath, 0755); err != nil {
+		fmt.Printf("WARNING: failed to make script executable: %v\n", err)
+	}
+
+	// Run the test script with the project directory as argument
+	cmd := exec.Command("bash", scriptPath, appDir)
+	cmd.Dir = cwd
+	cmd.Env = os.Environ()
+
+	// Capture output
+	output, err := cmd.CombinedOutput()
+	outputStr := string(output)
+
+	// Print output
+	fmt.Print(outputStr)
+
+	// Parse results from .eval_results.json if it exists
+	resultsPath := filepath.Join(appDir, ".eval_results.json")
+	result, parseErr := parseEvalResultsJSON(resultsPath)
+	if parseErr != nil {
+		// Fall back to parsing output
+		result = parseShellTestOutput(outputStr)
+	}
+
+	// If script failed and we got no results, report error
+	if err != nil && result.Total == 0 {
+		return nil, fmt.Errorf("test script failed: %w", err)
+	}
+
+	fmt.Println("")
+	fmt.Println("═══════════════════════════════════════════════════════════════")
+	fmt.Printf("  Results: %d passed, %d failed, %d skipped\n", result.Passed, result.Failed, result.Skipped)
+	fmt.Println("═══════════════════════════════════════════════════════════════")
+
+	return result, nil
+}
+
+// findCLIAppDirectory finds the app directory for CLI tools
+func findCLIAppDirectory(projectDir string, language string) (string, error) {
+	// For Go projects, look for go.mod or main.go
+	if language == "go" {
+		if fileExists(filepath.Join(projectDir, "go.mod")) ||
+			fileExists(filepath.Join(projectDir, "main.go")) {
+			return projectDir, nil
+		}
+
+		// Check nested directories
+		entries, err := os.ReadDir(projectDir)
+		if err != nil {
+			return "", fmt.Errorf("failed to read project directory: %w", err)
+		}
+
+		for _, entry := range entries {
+			if entry.IsDir() {
+				nestedPath := filepath.Join(projectDir, entry.Name())
+				if fileExists(filepath.Join(nestedPath, "go.mod")) ||
+					fileExists(filepath.Join(nestedPath, "main.go")) {
+					return nestedPath, nil
+				}
+			}
+		}
+	}
+
+	// For Python CLI tools
+	if language == "python" {
+		if fileExists(filepath.Join(projectDir, "main.py")) ||
+			fileExists(filepath.Join(projectDir, "cli.py")) {
+			return projectDir, nil
+		}
+	}
+
+	// Default: use project dir itself
+	return projectDir, nil
+}
+
+// parseEvalResultsJSON parses the .eval_results.json file created by test scripts
+func parseEvalResultsJSON(path string) (*TestResult, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+
+	var results struct {
+		Passed int `json:"passed"`
+		Failed int `json:"failed"`
+		Total  int `json:"total"`
+	}
+
+	if err := json.Unmarshal(data, &results); err != nil {
+		return nil, err
+	}
+
+	return &TestResult{
+		Passed: results.Passed,
+		Failed: results.Failed,
+		Total:  results.Total,
+	}, nil
+}
+
+// parseShellTestOutput parses test results from shell script output
+func parseShellTestOutput(output string) *TestResult {
+	result := &TestResult{}
+
+	// Look for pattern: "Results: X passed, Y failed out of Z"
+	re := regexp.MustCompile(`Results:\s*(\d+)\s*passed,\s*(\d+)\s*failed`)
+	if matches := re.FindStringSubmatch(output); len(matches) > 2 {
+		result.Passed, _ = strconv.Atoi(matches[1])
+		result.Failed, _ = strconv.Atoi(matches[2])
+		result.Total = result.Passed + result.Failed
+	}
+
+	return result
 }
 
 // findAppDirectory locates the actual app directory, handling nested structures
