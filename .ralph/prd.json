@@ -46,7 +46,7 @@
       "title": "Add PR template",
       "details": "Create .github/PULL_REQUEST_TEMPLATE.md with checklist including: tests run, docs updated if needed, description of changes, and 'why' explanation field.",
       "priority": "medium",
-      "status": "todo",
+      "status": "done",
       "tests": "New PRs automatically show template with checklist"
     },
     {
