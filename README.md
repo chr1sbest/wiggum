@@ -120,6 +120,20 @@ Options:
 
 The PR body is auto-generated from `.ralph/prd.json`, listing completed tasks and any linked GitHub issues.
 
+## Commands
+
+| Command | Purpose | Key Flags |
+|---------|---------|-----------|
+| `ralph init [requirements.md]` | Initialize project with generated task list | `-requirements`, `-model` |
+| `ralph run` | Execute the autonomous loop | None |
+| `ralph add <work>` | Add new work items to PRD | `-file`, `-desc`, `-model` |
+| `ralph fix --issue N` | Create tasks from GitHub issue | `--issue`, `--repo`, `-model` |
+| `ralph pr` | Push branch and open PR with auto-generated summary | `--title`, `--draft`, `--base` |
+| `ralph upgrade` | Check for updates and upgrade Ralph | `-yes` |
+| `ralph version` | Show Ralph's version number | None |
+
+For detailed help on any command, run `ralph <command> -h`.
+
 ## Architecture
 
 ```
