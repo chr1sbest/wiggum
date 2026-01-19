@@ -34,12 +34,18 @@ func (i *jsonInt) UnmarshalJSON(b []byte) error {
 }
 
 type prdTask struct {
-	ID       string `json:"id"`
-	Title    string `json:"title"`
-	Details  string `json:"details,omitempty"`
-	Priority string `json:"priority,omitempty"`
-	Status   string `json:"status,omitempty"`
-	Tests    string `json:"tests,omitempty"`
+	ID       string     `json:"id"`
+	Title    string     `json:"title"`
+	Details  string     `json:"details,omitempty"`
+	Priority string     `json:"priority,omitempty"`
+	Status   string     `json:"status,omitempty"`
+	Tests    string     `json:"tests,omitempty"`
+	Issue    *taskIssue `json:"issue,omitempty"`
+}
+
+type taskIssue struct {
+	Number int    `json:"number"`
+	URL    string `json:"url"`
 }
 
 func stripJSONFences(s string) string {

@@ -174,18 +174,28 @@ Examples:
 
 		var after prdFile
 		_ = json.Unmarshal([]byte(updatedPRD), &after)
+
+		// Inject issue reference into new tasks
+		issueRef := &taskIssue{Number: issue.Number, URL: issue.URL}
 		added := make([]prdTask, 0)
-		for _, t := range after.Tasks {
+		for i, t := range after.Tasks {
 			id := strings.TrimSpace(t.ID)
 			if id == "" {
 				continue
 			}
 			if _, ok := oldIDs[id]; !ok {
-				added = append(added, t)
+				after.Tasks[i].Issue = issueRef
+				added = append(added, after.Tasks[i])
 			}
 		}
 
-		if err := os.WriteFile(prdPath, []byte(updatedPRD), 0644); err != nil {
+		// Re-serialize with issue fields added
+		out, err := json.MarshalIndent(after, "", "  ")
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Failed to serialize .ralph/prd.json: %v\n", err)
+			os.Exit(1)
+		}
+		if err := os.WriteFile(prdPath, out, 0644); err != nil {
 			fmt.Fprintf(os.Stderr, "Failed to update .ralph/prd.json: %v\n", err)
 			os.Exit(1)
 		}
@@ -208,6 +218,12 @@ Examples:
 	if len(newTasks) == 0 {
 		fmt.Fprintln(os.Stderr, "No new tasks returned.")
 		os.Exit(1)
+	}
+
+	// Inject issue reference into each task (don't rely on Claude to do it)
+	issueRef := &taskIssue{Number: issue.Number, URL: issue.URL}
+	for i := range newTasks {
+		newTasks[i].Issue = issueRef
 	}
 
 	var existing prdFile

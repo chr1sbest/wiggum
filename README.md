@@ -1,12 +1,22 @@
-# wiggum
+# Wiggum 🍩🤖
 
 <p align="left">
   <img src="assets/ralph.png" alt="ralph" width="250" />
 </p>
 
-Fully autonomous [Ralph Loop](https://ghuntley.com/ralph/) built to avoid context rot on Claude Code sessions.
+Hi! I'm Ralph Wiggum and I help your codebase do stuff. Sometimes I even do the *right* stuff.
 
-`while :; do cat PROMPT.md | claude-code ; done`
+This project is a "Ralph Loop" (aka `while :; do cat PROMPT.md | claude-code ; done`)… **with some bells and whistles**.
+
+## ELI5: What's the Ralph Loop?
+You give Ralph a goal. Ralph tries. Then Ralph tries again.  
+Ralph keeps going until the work is actually done (or until the guardrails say "nap time").
+
+### What Ralph is good at
+- **Autonomous coding:** He can iterate on a project instead of stopping after one attempt.
+- **Tiny brain on purpose:** Ralph "forgets" between runs — fresh starts, less context rot, git/files become the memory.
+- **Breaking big work into chunks:** Ralph tracks tasks in `prd.json`, so big scary stuff becomes little checkbox stuff.
+- **Guardrails:** Locking + run artifacts live in `.ralph/` so Ralph doesn't stampede your terminal forever.
 
 ## Install
 
@@ -72,12 +82,17 @@ ralph add new-work.md
 
 # Option B: inline
 ralph add "Add an endpoint that returns the user's country based on IP"
+
+# Option C: from a GitHub issue
+ralph fix --issue 42
 ```
 
-`add` will:
+`add` and `fix` will:
 - call Claude to translate your request into tasks
 - update `.ralph/prd.json` (also conditionally compact and archive)
 - print the new tasks to stdout
+
+When using `fix`, tasks include the issue reference so commits automatically close the GitHub issue with "Fixes #N".
 
 Next step:
 
@@ -153,7 +168,10 @@ rm -f .ralph/.ralph_lock
 
 ### Where do Claude logs go?
 
-Claude output logs are written to `.ralph/logs/`.
+Claude output logs are written to `.ralph/logs/`:
+- `loop_N.json` - Full Claude output (tokens, cost, session info, result)
+- `loop_N.md` - Clean markdown summary of what Claude accomplished
+- If output isn't valid JSON, falls back to timestamped `.log` files
 
 ### Claude usage limit / rate limit
 

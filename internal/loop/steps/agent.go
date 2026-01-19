@@ -407,7 +407,7 @@ func (s *AgentStep) executeClaudeCode(ctx context.Context, cfg AgentConfig, prom
 	return output, nil
 }
 
-// saveOutput saves Claude's output to a log file
+// saveOutput saves Claude's output to structured log files
 func (s *AgentStep) saveOutput(logDir, output string, loopCount int) {
 	if logDir == "" {
 		return
@@ -419,13 +419,30 @@ func (s *AgentStep) saveOutput(logDir, output string, loopCount int) {
 		return
 	}
 
-	// Create timestamped filename
-	timestamp := time.Now().Format("2006-01-02_15-04-05")
-	filename := fmt.Sprintf("claude_output_%s_loop%d.log", timestamp, loopCount)
-	path := filepath.Join(logDir, filename)
+	// Try to parse as JSON
+	var jsonData map[string]interface{}
+	if err := json.Unmarshal([]byte(output), &jsonData); err == nil {
+		// Valid JSON - save to loop_N.json
+		jsonPath := filepath.Join(logDir, fmt.Sprintf("loop_%d.json", loopCount))
+		if err := os.WriteFile(jsonPath, []byte(output), 0644); err != nil {
+			log.Printf("warning: failed to write JSON log %s: %v", jsonPath, err)
+		}
 
-	if err := os.WriteFile(path, []byte(output), 0644); err != nil {
-		log.Printf("warning: failed to write claude output log %s: %v", path, err)
+		// Extract 'result' field and save to loop_N.md
+		if result, ok := jsonData["result"].(string); ok && result != "" {
+			mdPath := filepath.Join(logDir, fmt.Sprintf("loop_%d.md", loopCount))
+			if err := os.WriteFile(mdPath, []byte(result), 0644); err != nil {
+				log.Printf("warning: failed to write markdown log %s: %v", mdPath, err)
+			}
+		}
+	} else {
+		// Not valid JSON - fall back to .log file
+		timestamp := time.Now().Format("2006-01-02_15-04-05")
+		filename := fmt.Sprintf("claude_output_%s_loop%d.log", timestamp, loopCount)
+		path := filepath.Join(logDir, filename)
+		if err := os.WriteFile(path, []byte(output), 0644); err != nil {
+			log.Printf("warning: failed to write fallback log %s: %v", path, err)
+		}
 	}
 }
 
