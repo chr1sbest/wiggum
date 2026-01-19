@@ -78,7 +78,7 @@
       "title": "Create GitHub labels for contributors",
       "details": "Add labels to repository: 'good first issue', 'help wanted', 'area:cli', 'area:prompts', 'area:evals', 'area:loop', 'documentation', 'enhancement', 'bug'.",
       "priority": "low",
-      "status": "todo",
+      "status": "done",
       "tests": "Labels exist in GitHub repository settings"
     },
     {
