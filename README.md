@@ -1,39 +1,34 @@
-# Wiggum 🍩🤖
+# Wiggum 🤖
+
+*"I'm in danger"* - Ralph Wiggum, and every software engineer in 2026
 
 <p align="left">
   <img src="assets/ralph.png" alt="ralph" width="250" />
 </p>
 
-Hi! I'm Ralph Wiggum and I help your codebase do stuff. Sometimes I even do the *right* stuff.
-
-This project is a "Ralph Loop" (aka `while :; do cat PROMPT.md | claude-code ; done`)… **with some bells and whistles**.
-
-## ELI5: What's the Ralph Loop?
-You give Ralph a goal. Ralph tries. Then Ralph tries again.  
-Ralph keeps going until the work is actually done (or until the guardrails say "nap time").
-
-### What Ralph is good at
-- **Autonomous coding:** He can iterate on a project instead of stopping after one attempt.
-- **Tiny brain on purpose:** Ralph "forgets" between runs — fresh starts, less context rot, git/files become the memory.
-- **Breaking big work into chunks:** Ralph tracks tasks in `prd.json`, so big scary stuff becomes little checkbox stuff.
-- **Guardrails:** Locking + run artifacts live in `.ralph/` so Ralph doesn't stampede your terminal forever.
-
 ## Install
-
-### Homebrew
 
 ```bash
 brew tap chr1sbest/tap
 brew install ralph
 ```
 
+## What's the Ralph Loop?
+The Ralph Loop is `while :; do cat PROMPT.md | claude-code ; done`
+
+This outer loop around Claude Code attempts to reduce LLM context rot by "resetting memory" between runs. Each run of the loop rebuilds Ralph's context from scratch and attempts to solve chunks of work defined in a `prd.json` file.
+
+## Whats unique about this loop implementation?
+
+The Ralph Loop at its simplest requires human intervention to stop it. To reduce the need for human intervention, this tool adds a few bells and whistles:
+
+- Monitoring and Cost Analysis
+- Evaluation Framework
+- Resilience Framework (retries, locks, circuit breakers)
+
 ### Requirements
 
-- **Go 1.24** or later
-- **Claude Code CLI** must be installed and available on your `PATH` as `claude`.
-  - Install: https://code.claude.com/docs/en/setup
-  - Quick install: `curl -fsSL https://claude.ai/install.sh | bash`
-  - Verify: `claude --help`
+- **[Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code/overview)** must be installed and available on your `PATH` as `claude`.
 - Ralph invokes Claude Code with **tool access enabled** (unsafe mode).
 
 ## Usage
