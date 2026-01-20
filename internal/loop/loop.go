@@ -266,11 +266,11 @@ func (l *Loop) Run(ctx context.Context) error {
 		// Preflight: check if all tasks are complete before running Claude
 		if l.prdPath != "" {
 			prdStatus, _ := agent.LoadPRDStatus(l.prdPath)
-			if prdStatus != nil && prdStatus.TotalTasks > 0 && !prdStatus.HasActionableTasks() {
+			if prdStatus != nil && prdStatus.IsComplete() {
 				l.state.Status = StatusComplete
 				l.status.Complete(l.state.LoopNumber, l.countEnabledSteps())
 				l.writeRunState("complete", "", time.Time{}, "", nil)
-				return &steps.AgentExitError{Reason: agent.ExitReasonNoActionableTasks}
+				return &steps.AgentExitError{Reason: agent.ExitReasonPlanComplete}
 			}
 		}
 

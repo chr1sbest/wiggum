@@ -9,7 +9,7 @@ import (
 )
 
 // refreshStatus updates the terminal status display with animated dots
-func (s *AgentStep) refreshStatus(prdFile string) {
+func (s *AgentStep) refreshStatus(prdFile string, _ bool) {
 	prdStatus, _ := agent.LoadPRDStatus(prdFile)
 	completed := 0
 	total := 0
@@ -46,7 +46,7 @@ func (s *AgentStep) refreshStatus(prdFile string) {
 		line2 = fmt.Sprintf("\033[32m\033[1mWorking%s\033[0m", dots)
 	}
 
-	// Clear and rewrite (2 lines)
+	// Clear and rewrite (2 lines) - loop.go already printed initial status
 	fmt.Print("\033[A\033[2K\033[A\033[2K\r")
 	fmt.Println(line1)
 	fmt.Println(line2)

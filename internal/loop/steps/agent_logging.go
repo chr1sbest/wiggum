@@ -31,9 +31,13 @@ func (s *AgentStep) saveOutput(logDir, output string, loopCount int) {
 	// Try to parse as JSON
 	var jsonData map[string]interface{}
 	if err := json.Unmarshal([]byte(jsonOutput), &jsonData); err == nil {
-		// Valid JSON - save to loop_N.json (use cleaned jsonOutput, not raw output)
+		// Valid JSON - pretty print and save to loop_N.json
 		jsonPath := filepath.Join(logDir, fmt.Sprintf("loop_%d.json", loopCount))
-		if err := os.WriteFile(jsonPath, []byte(jsonOutput), 0644); err != nil {
+		prettyJSON, err := json.MarshalIndent(jsonData, "", "  ")
+		if err != nil {
+			prettyJSON = []byte(jsonOutput) // fallback to original
+		}
+		if err := os.WriteFile(jsonPath, prettyJSON, 0644); err != nil {
 			log.Printf("warning: failed to write JSON log %s: %v", jsonPath, err)
 		}
 

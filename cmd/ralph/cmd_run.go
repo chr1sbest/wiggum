@@ -232,15 +232,10 @@ func validateRunPreflight(configFile string) error {
 		".ralph/requirements.md",
 		".ralph/prompts/SETUP_PROMPT.md",
 		".ralph/prompts/LOOP_PROMPT.md",
-		".ralph/configs",
 	}
 	for _, p := range required {
-		st, err := os.Stat(p)
-		if err != nil {
-			return fmt.Errorf("missing required project file: %s\n\nRun `ralph run` from your project root (the folder created by `ralph init`) containing .ralph/prd.json, .ralph/requirements.md, .ralph/configs/, .ralph/prompts/SETUP_PROMPT.md, .ralph/prompts/LOOP_PROMPT.md", p)
-		}
-		if p == ".ralph/configs" && !st.IsDir() {
-			return fmt.Errorf("expected .ralph/configs/ to be a directory\n\nRun `ralph run` from your project root (the folder created by `ralph init`) containing .ralph/prd.json, .ralph/requirements.md, .ralph/configs/, .ralph/prompts/SETUP_PROMPT.md, .ralph/prompts/LOOP_PROMPT.md")
+		if _, err := os.Stat(p); err != nil {
+			return fmt.Errorf("missing required project file: %s\n\nRun `ralph run` from your project root (the folder created by `ralph init`) containing .ralph/prd.json, .ralph/requirements.md, .ralph/config.json, .ralph/prompts/", p)
 		}
 	}
 

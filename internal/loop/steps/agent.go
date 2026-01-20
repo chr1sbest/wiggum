@@ -91,17 +91,8 @@ func (s *AgentStep) Execute(ctx context.Context, rawConfig json.RawMessage) erro
 	// Build loop context
 	loopContext := s.buildLoopContext(cfg, prdStatus, sessionState)
 
-	// Parse timeout
-	timeout, err := time.ParseDuration(cfg.Timeout)
-	if err != nil {
-		timeout = 15 * time.Minute
-	}
-
-	// Create timeout context
-	execCtx, cancel := context.WithTimeout(ctx, timeout)
-	defer cancel()
-
 	// Start status refresh ticker for animation
+	// Skip first tick since loop.go already printed initial status via l.status.Step()
 	stopRefresh := make(chan struct{})
 	go func() {
 		ticker := time.NewTicker(1 * time.Second)
@@ -111,13 +102,13 @@ func (s *AgentStep) Execute(ctx context.Context, rawConfig json.RawMessage) erro
 			case <-stopRefresh:
 				return
 			case <-ticker.C:
-				s.refreshStatus(cfg.PrdFile)
+				s.refreshStatus(cfg.PrdFile, false)
 			}
 		}
 	}()
 
 	// Execute Claude
-	output, err := s.executeClaudeCode(execCtx, cfg, string(promptContent), loopContext)
+	output, err := s.executeClaudeCode(ctx, cfg, string(promptContent), loopContext)
 	close(stopRefresh)
 	if err != nil {
 		s.saveOutput(cfg.LogDir, output, s.loopCount)

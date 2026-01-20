@@ -29,58 +29,21 @@ type DefaultLoopConfigOptions struct {
 }
 
 const defaultLoopConfigTemplate = `{
-  "name": "default-loop",
-  "description": "Ralph automation loop with Claude agent",
+  "name": "default",
   "max_loops_per_task": 10,
   "steps": [
     {
       "type": "agent",
-      "name": "setup",
-      "config": {
-        "prompt_file": "{{.SetupPromptFile}}",
-        "prd_file": "{{.PrdFile}}",
-{{- if .Model }}
-        "model": "{{.Model}}",
-{{- end }}
-        "session_file": ".ralph/.ralph_session",
-        "marker_file": "{{.MarkerFile}}",
-        "allowed_tools": "Write,Read,Edit,Glob,Grep,Bash,Task,TodoWrite,WebFetch,WebSearch",
-        "timeout": "15m",
-        "log_dir": "{{.LogDir}}"
-      },
-      "timeout": "20m",
-      "max_retries": 1,
-      "retry_delay": "30s"
-    },
-    {
-      "type": "agent",
-      "name": "run-claude",
+      "name": "claude",
       "config": {
         "prompt_file": "{{.LoopPromptFile}}",
         "prd_file": "{{.PrdFile}}",
 {{- if .Model }}
         "model": "{{.Model}}",
 {{- end }}
-        "session_file": ".ralph/.ralph_session",
-        "allowed_tools": "Write,Read,Edit,Glob,Grep,Bash,Task,TodoWrite,WebFetch,WebSearch",
-        "timeout": "15m",
         "log_dir": "{{.LogDir}}"
       },
-      "timeout": "20m",
-      "max_retries": 1,
-      "retry_delay": "30s"
-    },
-    {
-      "type": "git-commit",
-      "name": "commit-progress",
-      "continue_on_error": true,
-      "config": {
-        "enabled": true,
-        "repo_dir": "{{.RepoDir}}",
-        "prd_file": "{{.PrdFile}}",
-        "commit_message_file": "{{.CommitMessageFile}}",
-        "message_template": "{{"{{task_id}}"}}: {{"{{task}}"}}"
-      }
+      "timeout": "20m"
     }
   ]
 }
