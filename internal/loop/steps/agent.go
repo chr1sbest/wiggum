@@ -1,93 +1,24 @@
 package steps
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"log"
 	"os"
-	"os/exec"
-	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/chr1sbest/wiggum/internal/agent"
 	"github.com/chr1sbest/wiggum/internal/tracker"
 )
 
-// ClaudeUsageError indicates Claude is unavailable due to quota/usage limits.
-// This is surfaced to the CLI for clearer, actionable messaging.
-type ClaudeUsageError struct {
-	Details string
-}
-
-func (e *ClaudeUsageError) Error() string {
-	if e == nil {
-		return "claude usage error"
-	}
-	if strings.TrimSpace(e.Details) == "" {
-		return "claude usage limit reached"
-	}
-	return "claude usage limit reached: " + strings.TrimSpace(e.Details)
-}
-
-func isClaudeUsageLimitText(s string) bool {
-	msg := strings.ToLower(s)
-	return strings.Contains(msg, "out of extra usage") ||
-		strings.Contains(msg, "out of usage") ||
-		strings.Contains(msg, "usage limit") ||
-		strings.Contains(msg, "quota") ||
-		strings.Contains(msg, "resets")
-}
-
-// AgentConfig holds configuration for the agent step
-type AgentConfig struct {
-	// PromptFile is the path to PROMPT.md (default: "PROMPT.md")
-	PromptFile string `json:"prompt_file,omitempty"`
-	// PrdFile is the path to prd.json (default: "prd.json")
-	PrdFile string `json:"prd_file,omitempty"`
-	// Model is the Claude model to use (optional)
-	Model string `json:"model,omitempty"`
-	// MarkerFile is an optional file path. If it exists, the agent step is skipped.
-	// If set and the step runs successfully, the marker file will be created.
-	MarkerFile string `json:"marker_file,omitempty"`
-	// AllowedTools is a comma-separated list of tools Claude can use
-	AllowedTools string `json:"allowed_tools,omitempty"`
-	// Timeout is the max execution time (default: "15m")
-	Timeout string `json:"timeout,omitempty"`
-	// SessionFile is where to store session state
-	SessionFile string `json:"session_file,omitempty"`
-	// SessionExpiryHours is how long sessions last (default: 24)
-	SessionExpiryHours int `json:"session_expiry_hours,omitempty"`
-	// ClaudeBinary is the path to claude CLI (default: "claude")
-	ClaudeBinary string `json:"claude_binary,omitempty"`
-	// OutputFormat is json or text (default: "json")
-	OutputFormat string `json:"output_format,omitempty"`
-	// AppendSystemPrompt is extra context to add to the prompt
-	AppendSystemPrompt string `json:"append_system_prompt,omitempty"`
-	// LogDir is where to save Claude output logs
-	LogDir string `json:"log_dir,omitempty"`
-}
-
-// DefaultAgentConfig returns sensible defaults
-func DefaultAgentConfig() AgentConfig {
-	return AgentConfig{
-		PromptFile:         "PROMPT.md",
-		PrdFile:            "prd.json",
-		Model:              "sonnet",
-		MarkerFile:         "",
-		AllowedTools:       "Write,Read,Edit,Glob,Grep,Bash,Task,TodoWrite,WebFetch,WebSearch",
-		Timeout:            "15m",
-		SessionFile:        ".ralph_session",
-		SessionExpiryHours: 24,
-		ClaudeBinary:       "claude",
-		OutputFormat:       "json",
-		LogDir:             "logs",
-	}
-}
-
-// AgentStep executes Claude Code to work on tasks
+// AgentStep executes Claude Code to work on tasks.
+// This is the core orchestration - other concerns are split into:
+//   - agent_config.go:  configuration
+//   - agent_errors.go:  error types
+//   - agent_claude.go:  Claude CLI execution
+//   - agent_logging.go: output logging
+//   - agent_status.go:  terminal status display
 type AgentStep struct {
 	name         string
 	session      *agent.SessionManager
@@ -106,50 +37,6 @@ func NewAgentStep() *AgentStep {
 func (s *AgentStep) Name() string { return s.name }
 func (s *AgentStep) Type() string { return "agent" }
 
-// refreshStatus updates the terminal status display with animated dots
-func (s *AgentStep) refreshStatus(prdFile string) {
-	prdStatus, _ := agent.LoadPRDStatus(prdFile)
-	completed := 0
-	total := 0
-	current := ""
-	if prdStatus != nil {
-		completed = prdStatus.CompletedTasks
-		total = prdStatus.TotalTasks
-		current = prdStatus.CurrentTask
-	}
-
-	// Progress bar
-	const barWidth = 20
-	filled := 0
-	if total > 0 {
-		filled = (completed * barWidth) / total
-	}
-	bar := "\033[32m" + strings.Repeat("█", filled) + "\033[0m" +
-		"\033[2m" + strings.Repeat("░", barWidth-filled) + "\033[0m"
-
-	// Animated dots
-	phase := (time.Now().Unix()) % 3
-	dots := strings.Repeat(".", int(phase)+1)
-
-	// Build status line
-	var line1, line2 string
-	if current != "" {
-		line1 = fmt.Sprintf("%s \033[2m%d/%d\033[0m %s", bar, completed, total, current)
-	} else {
-		line1 = fmt.Sprintf("%s \033[2m%d/%d\033[0m", bar, completed, total)
-	}
-	if completed == total && total > 0 {
-		line2 = fmt.Sprintf("\033[32m\033[1mWrapping up%s\033[0m", dots)
-	} else {
-		line2 = fmt.Sprintf("\033[32m\033[1mWorking%s\033[0m", dots)
-	}
-
-	// Clear and rewrite (2 lines)
-	fmt.Print("\033[A\033[2K\033[A\033[2K\r")
-	fmt.Println(line1)
-	fmt.Println(line2)
-}
-
 // Execute runs the Claude Code agent
 func (s *AgentStep) Execute(ctx context.Context, rawConfig json.RawMessage) error {
 	if err := os.MkdirAll(".ralph", 0755); err != nil {
@@ -165,6 +52,7 @@ func (s *AgentStep) Execute(ctx context.Context, rawConfig json.RawMessage) erro
 		}
 	}
 
+	// Check marker file (skip if already done)
 	if cfg.MarkerFile != "" {
 		if _, err := os.Stat(cfg.MarkerFile); err == nil {
 			return nil
@@ -191,6 +79,7 @@ func (s *AgentStep) Execute(ctx context.Context, rawConfig json.RawMessage) erro
 		s.exitDetector.Reset()
 	}
 
+	// Load PRD status to check exit conditions
 	prdStatus, err := agent.LoadPRDStatus(cfg.PrdFile)
 	if err != nil {
 		return fmt.Errorf("failed to load prd status: %w", err)
@@ -244,11 +133,10 @@ func (s *AgentStep) Execute(ctx context.Context, rawConfig json.RawMessage) erro
 		}
 	}()
 
-	// Build and execute Claude command
+	// Execute Claude
 	output, err := s.executeClaudeCode(execCtx, cfg, string(promptContent), loopContext)
 	close(stopRefresh)
 	if err != nil {
-		// Save output even on failure
 		s.saveOutput(cfg.LogDir, output, s.loopCount)
 		return fmt.Errorf("claude execution failed: %w", err)
 	}
@@ -256,11 +144,12 @@ func (s *AgentStep) Execute(ctx context.Context, rawConfig json.RawMessage) erro
 	// Save output
 	s.saveOutput(cfg.LogDir, output, s.loopCount)
 
+	// Write marker file if configured
 	if cfg.MarkerFile != "" {
 		_ = os.WriteFile(cfg.MarkerFile, []byte(time.Now().Format(time.RFC3339)), 0644)
 	}
 
-	// Best-effort: parse token/cost usage from Claude JSON output and persist run metrics.
+	// Track usage metrics
 	if delta, ok := tracker.ParseClaudeUsageFromOutput(output); ok {
 		runID := ""
 		if rs, err := trackerWriter.LoadRunState(); err == nil && rs != nil {
@@ -277,8 +166,7 @@ func (s *AgentStep) Execute(ctx context.Context, rawConfig json.RawMessage) erro
 		})
 	}
 
-	// Check exit conditions
-	// Re-load prd status after the agent may have updated it.
+	// Check exit conditions after execution
 	prdStatusAfter, _ := agent.LoadPRDStatus(cfg.PrdFile)
 	planComplete := prdStatusAfter != nil && prdStatusAfter.IsComplete()
 	completedAfter := 0
@@ -290,195 +178,4 @@ func (s *AgentStep) Execute(ctx context.Context, rawConfig json.RawMessage) erro
 	}
 
 	return nil
-}
-
-// buildLoopContext creates context string for Claude
-func (s *AgentStep) buildLoopContext(cfg AgentConfig, prdStatus *agent.PRDStatus, session *agent.SessionState) string {
-	var parts []string
-
-	// Loop number
-	parts = append(parts, fmt.Sprintf("Loop #%d.", s.loopCount))
-
-	// Task progress
-	if prdStatus != nil && prdStatus.TotalTasks > 0 {
-		parts = append(parts, fmt.Sprintf("Tasks: %s (%d remaining).",
-			prdStatus.Progress(), prdStatus.IncompleteTasks))
-
-		// Show current task(s) - prefer multi-task view
-		if len(prdStatus.CurrentTasks) > 0 {
-			// Truncate long task descriptions
-			firstTask := prdStatus.CurrentTasks[0]
-			if len(firstTask) > 100 {
-				firstTask = firstTask[:100] + "..."
-			}
-			parts = append(parts, fmt.Sprintf("Current: %s", firstTask))
-		} else if prdStatus.CurrentTask != "" {
-			// Backward compatibility: single task
-			next := prdStatus.CurrentTask
-			if len(next) > 100 {
-				next = next[:100] + "..."
-			}
-			parts = append(parts, fmt.Sprintf("Current: %s", next))
-		}
-	}
-
-	// Include learnings from previous sessions
-	learningsPath := ".ralph/learnings.md"
-	if learnings, err := os.ReadFile(learningsPath); err == nil && len(learnings) > 0 {
-		content := strings.TrimSpace(string(learnings))
-		if len(content) > 2000 {
-			content = content[:2000] + "..."
-		}
-		if content != "" {
-			parts = append(parts, fmt.Sprintf("\n\nPrevious learnings:\n%s", content))
-		}
-	}
-
-	// Append custom context
-	if cfg.AppendSystemPrompt != "" {
-		parts = append(parts, cfg.AppendSystemPrompt)
-	}
-
-	return strings.Join(parts, " ")
-}
-
-// executeClaudeCode runs the claude CLI
-func (s *AgentStep) executeClaudeCode(ctx context.Context, cfg AgentConfig, prompt, loopContext string) (string, error) {
-	args := []string{}
-
-	// Model
-	if strings.TrimSpace(cfg.Model) != "" {
-		args = append(args, "--model", strings.TrimSpace(cfg.Model))
-	}
-
-	// Output format
-	if cfg.OutputFormat == "json" {
-		args = append(args, "--output-format", "json")
-	}
-
-	// Allowed tools
-	if cfg.AllowedTools != "" {
-		args = append(args, "--allowedTools")
-		tools := strings.Split(cfg.AllowedTools, ",")
-		for _, tool := range tools {
-			tool = strings.TrimSpace(tool)
-			if tool != "" {
-				args = append(args, tool)
-			}
-		}
-	}
-
-	// Skip permission prompts for autonomous operation
-	args = append(args, "--dangerously-skip-permissions")
-
-	// Add loop context
-	if loopContext != "" {
-		args = append(args, "--append-system-prompt", loopContext)
-	}
-
-	// Add the prompt
-	args = append(args, "-p", prompt)
-
-	// Create command
-	cmd := exec.CommandContext(ctx, cfg.ClaudeBinary, args...)
-	cmd.Dir, _ = os.Getwd()
-
-	// Capture output
-	var stdout, stderr bytes.Buffer
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
-
-	// Run the command
-	err := cmd.Run()
-
-	output := stdout.String()
-	if stderr.Len() > 0 {
-		output += "\n--- STDERR ---\n" + stderr.String()
-	}
-
-	if err != nil {
-		// Preserve combined output in error classification.
-		combinedText := strings.TrimSpace(output)
-		if isClaudeUsageLimitText(combinedText) {
-			return output, &ClaudeUsageError{Details: combinedText}
-		}
-
-		// Check for specific error types
-		if ctx.Err() == context.DeadlineExceeded {
-			return output, fmt.Errorf("timeout after %s", cfg.Timeout)
-		}
-		if exitErr, ok := err.(*exec.ExitError); ok {
-			// Some Claude CLI errors show up on stdout; include combined output.
-			if combinedText == "" {
-				combinedText = strings.TrimSpace(stderr.String())
-			}
-			return output, fmt.Errorf("exit code %d: %s", exitErr.ExitCode(), combinedText)
-		}
-		return output, err
-	}
-
-	return output, nil
-}
-
-// saveOutput saves Claude's output to structured log files
-func (s *AgentStep) saveOutput(logDir, output string, loopCount int) {
-	if logDir == "" {
-		return
-	}
-
-	// Ensure log directory exists
-	if err := os.MkdirAll(logDir, 0755); err != nil {
-		log.Printf("warning: failed to create log directory %s: %v", logDir, err)
-		return
-	}
-
-	// Strip STDERR section if present (Claude CLI appends this after JSON)
-	jsonOutput := output
-	if idx := strings.Index(output, "\n--- STDERR ---"); idx != -1 {
-		jsonOutput = strings.TrimSpace(output[:idx])
-	}
-
-	// Try to parse as JSON
-	var jsonData map[string]interface{}
-	if err := json.Unmarshal([]byte(jsonOutput), &jsonData); err == nil {
-		// Valid JSON - save to loop_N.json (use cleaned jsonOutput, not raw output)
-		jsonPath := filepath.Join(logDir, fmt.Sprintf("loop_%d.json", loopCount))
-		if err := os.WriteFile(jsonPath, []byte(jsonOutput), 0644); err != nil {
-			log.Printf("warning: failed to write JSON log %s: %v", jsonPath, err)
-		}
-
-		// Extract 'result' field and save to loop_N.md
-		if result, ok := jsonData["result"].(string); ok && result != "" {
-			mdPath := filepath.Join(logDir, fmt.Sprintf("loop_%d.md", loopCount))
-			if err := os.WriteFile(mdPath, []byte(result), 0644); err != nil {
-				log.Printf("warning: failed to write markdown log %s: %v", mdPath, err)
-			}
-		}
-	} else {
-		// Not valid JSON - fall back to .log file
-		timestamp := time.Now().Format("2006-01-02_15-04-05")
-		filename := fmt.Sprintf("claude_output_%s_loop%d.log", timestamp, loopCount)
-		path := filepath.Join(logDir, filename)
-		if err := os.WriteFile(path, []byte(output), 0644); err != nil {
-			log.Printf("warning: failed to write fallback log %s: %v", path, err)
-		}
-	}
-}
-
-// AgentExitError indicates the agent has determined work is complete
-type AgentExitError struct {
-	Reason agent.ExitReason
-}
-
-func (e *AgentExitError) Error() string {
-	return fmt.Sprintf("agent exit: %s", e.Reason)
-}
-
-// IsAgentExitError checks if an error is an agent exit signal
-func IsAgentExitError(err error) (*AgentExitError, bool) {
-	if err == nil {
-		return nil, false
-	}
-	exitErr, ok := err.(*AgentExitError)
-	return exitErr, ok
 }

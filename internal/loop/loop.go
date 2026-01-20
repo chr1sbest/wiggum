@@ -381,9 +381,15 @@ func (l *Loop) executeStepWithResilience(ctx context.Context, stepCfg config.Ste
 	var retryAttempt int
 	var lastErr error
 
-	// Execute with retry and circuit breaker
+	// Execute step - check for AgentExitError which is a success signal, not a failure
 	execFunc := func(execCtx context.Context) error {
-		return step.Execute(execCtx, stepCfg.Config)
+		err := step.Execute(execCtx, stepCfg.Config)
+		// AgentExitError is a success signal (plan complete), not a failure to retry
+		// Mark it as permanent so retry logic doesn't treat it as transient
+		if _, isExit := steps.IsAgentExitError(err); isExit {
+			return resilience.NewPermanentError(err)
+		}
+		return err
 	}
 
 	// Wrap with timeout if configured
