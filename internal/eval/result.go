@@ -16,6 +16,7 @@ type EvalResult struct {
 	Timestamp         time.Time `json:"timestamp"`
 	DurationSeconds   int       `json:"duration_seconds"`
 	TotalCalls        int       `json:"total_calls"`
+	TotalTurns        int       `json:"total_turns"`
 	InputTokens       int       `json:"input_tokens"`
 	OutputTokens      int       `json:"output_tokens"`
 	TotalTokens       int       `json:"total_tokens"`

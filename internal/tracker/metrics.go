@@ -11,6 +11,7 @@ type RunMetrics struct {
 	UpdatedAt         time.Time  `json:"updated_at"`
 	CompletedAt       *time.Time `json:"completed_at,omitempty"`
 	TotalClaudeCalls  int        `json:"total_claude_calls"`
+	TotalTurns        int        `json:"total_turns"`
 	InputTokens       int        `json:"input_tokens"`
 	OutputTokens      int        `json:"output_tokens"`
 	TotalTokens       int        `json:"total_tokens"`
@@ -24,6 +25,7 @@ type UsageDelta struct {
 	OutputTokens int
 	TotalTokens  int
 	CostUSD      float64
+	Turns        int
 }
 
 func (w *Writer) LoadMetrics() (*RunMetrics, error) {
@@ -72,6 +74,7 @@ func (w *Writer) AddUsage(runID string, delta UsageDelta) {
 		return
 	}
 	m.TotalClaudeCalls++
+	m.TotalTurns += delta.Turns
 	m.InputTokens += delta.InputTokens
 	m.OutputTokens += delta.OutputTokens
 	m.TotalTokens += delta.TotalTokens

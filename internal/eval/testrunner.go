@@ -45,6 +45,11 @@ func RunSharedTests(projectDir string, suite *SuiteConfig, port int) (*TestResul
 		return runCLITests(projectDir, suite)
 	}
 
+	// Route to Go-based API tests for specific suites
+	if suite.Name == "tasktracker" {
+		return runWebAPITests(projectDir, suite, port)
+	}
+
 	// Web app flow: find app, setup, start server, run pytest
 	appDir, err := findAppDirectory(projectDir)
 	if err != nil {
@@ -84,7 +89,7 @@ func RunSharedTests(projectDir string, suite *SuiteConfig, port int) (*TestResul
 	}()
 
 	// Wait for app to be ready
-	if err := waitForApp(port, 30*time.Second); err != nil {
+	if err := waitForApp(port, 30*time.Second, appCmd); err != nil {
 		return nil, err
 	}
 
@@ -105,6 +110,56 @@ func RunSharedTests(projectDir string, suite *SuiteConfig, port int) (*TestResul
 	fmt.Println("═══════════════════════════════════════════════════════════════")
 
 	return result, nil
+}
+
+// runWebAPITests runs Go-based tests for web API suites
+func runWebAPITests(projectDir string, suite *SuiteConfig, port int) (*TestResult, error) {
+	// Find the actual project directory (handle nested dirs)
+	appDir, err := findAppDirectory(projectDir)
+	if err != nil {
+		return nil, err
+	}
+
+	// Set up Python venv if needed
+	if err := setupVenv(appDir); err != nil {
+		fmt.Printf("WARNING: failed to set up venv: %v\n", err)
+	}
+
+	// Set up .env file if needed
+	if err := setupEnvFile(appDir); err != nil {
+		fmt.Printf("WARNING: failed to set up .env: %v\n", err)
+	}
+
+	// Kill any existing process on the port
+	if err := killProcessOnPort(port); err != nil {
+		fmt.Printf("WARNING: failed to kill process on port %d: %v\n", port, err)
+	}
+
+	// Start the app in background
+	appCmd, err := startApp(appDir, port)
+	if err != nil {
+		fmt.Printf("WARNING: failed to start app: %v\n", err)
+	}
+	defer func() {
+		if appCmd != nil && appCmd.Process != nil {
+			appCmd.Process.Kill()
+		}
+	}()
+
+	// Wait for app to be ready (but continue even if it fails)
+	if err := waitForApp(port, 30*time.Second, appCmd); err != nil {
+		fmt.Printf("WARNING: app not ready: %v\n", err)
+	}
+
+	// Run Go-based API tests (they will fail if app isn't running)
+	baseURL := fmt.Sprintf("http://localhost:%d", port)
+
+	switch suite.Name {
+	case "tasktracker":
+		return RunTasktrackerTests(baseURL)
+	default:
+		return nil, fmt.Errorf("no Go test runner for web API suite: %s", suite.Name)
+	}
 }
 
 // runCLITests runs tests for CLI tool suites
@@ -171,8 +226,9 @@ func findCLIAppDirectory(projectDir string, language string) (string, error) {
 
 // findAppDirectory locates the actual app directory, handling nested structures
 func findAppDirectory(projectDir string) (string, error) {
-	// Check if app.py or run.py exists in projectDir
+	// Check if app.py, main.py, run.py exists in projectDir
 	if fileExists(filepath.Join(projectDir, "app.py")) ||
+		fileExists(filepath.Join(projectDir, "main.py")) ||
 		fileExists(filepath.Join(projectDir, "run.py")) ||
 		dirExists(filepath.Join(projectDir, "app")) {
 		return projectDir, nil
@@ -188,6 +244,7 @@ func findAppDirectory(projectDir string) (string, error) {
 		if entry.IsDir() {
 			nestedPath := filepath.Join(projectDir, entry.Name())
 			if fileExists(filepath.Join(nestedPath, "app.py")) ||
+				fileExists(filepath.Join(nestedPath, "main.py")) ||
 				fileExists(filepath.Join(nestedPath, "run.py")) ||
 				dirExists(filepath.Join(nestedPath, "app")) {
 				return nestedPath, nil
@@ -195,7 +252,7 @@ func findAppDirectory(projectDir string) (string, error) {
 		}
 	}
 
-	return "", fmt.Errorf("no app.py, run.py, or app/ found in %s", projectDir)
+	return "", fmt.Errorf("no app.py, main.py, run.py, or app/ found in %s", projectDir)
 }
 
 // setupVenv creates and sets up a Python virtual environment if requirements.txt exists
@@ -286,22 +343,35 @@ func startDockerServices(appDir string) error {
 
 // killProcessOnPort kills any process running on the specified port
 func killProcessOnPort(port int) error {
-	// Use lsof to find the process
-	cmd := exec.Command("lsof", "-ti", fmt.Sprintf(":%d", port))
+	// Use lsof to find LISTENing process IDs on the port.
+	// -nP avoids DNS/service-name lookups (faster and less error-prone).
+	// -t prints only PIDs.
+	cmd := exec.Command("lsof", "-nP", fmt.Sprintf("-iTCP:%d", port), "-sTCP:LISTEN", "-t")
 	output, err := cmd.Output()
 	if err != nil {
 		// No process found, which is fine
 		return nil
 	}
 
-	// Kill the process
-	pid := strings.TrimSpace(string(output))
-	if pid != "" {
-		killCmd := exec.Command("kill", "-9", pid)
-		return killCmd.Run()
+	pids := strings.Fields(string(output))
+	if len(pids) == 0 {
+		return nil
 	}
 
-	return nil
+	var lastErr error
+	for _, pid := range pids {
+		pid = strings.TrimSpace(pid)
+		if pid == "" {
+			continue
+		}
+		killCmd := exec.Command("kill", "-9", pid)
+		if err := killCmd.Run(); err != nil {
+			// Best-effort: process may have already exited, or PID may be stale.
+			lastErr = err
+		}
+	}
+
+	return lastErr
 }
 
 // startApp starts the application in the background
@@ -318,10 +388,27 @@ func startApp(appDir string, port int) (*exec.Cmd, error) {
 	}
 
 	// Determine which file to run
+	uvicornCmd := filepath.Join(appDir, "venv", "bin", "uvicorn")
+
 	if fileExists(filepath.Join(appDir, "run.py")) {
 		cmd = exec.Command(pythonCmd, "run.py")
 	} else if fileExists(filepath.Join(appDir, "app.py")) {
 		cmd = exec.Command(pythonCmd, "app.py")
+	} else if fileExists(filepath.Join(appDir, "main.py")) {
+		// FastAPI app - use uvicorn
+		if fileExists(uvicornCmd) {
+			cmd = exec.Command(uvicornCmd, "main:app", "--host", "0.0.0.0", "--port", strconv.Itoa(port))
+		} else {
+			// Try running main.py directly (may have uvicorn.run inside)
+			cmd = exec.Command(pythonCmd, "main.py")
+		}
+	} else if fileExists(filepath.Join(appDir, "app", "main.py")) {
+		// FastAPI app with app/ directory structure
+		if fileExists(uvicornCmd) {
+			cmd = exec.Command(uvicornCmd, "app.main:app", "--host", "0.0.0.0", "--port", strconv.Itoa(port))
+		} else {
+			cmd = exec.Command(pythonCmd, "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", strconv.Itoa(port))
+		}
 	} else {
 		// Try Flask run
 		flaskCmd := filepath.Join(appDir, "venv", "bin", "flask")
@@ -329,7 +416,7 @@ func startApp(appDir string, port int) (*exec.Cmd, error) {
 			cmd = exec.Command(flaskCmd, "run", "--port", strconv.Itoa(port))
 			cmd.Env = append(os.Environ(), "FLASK_APP=app")
 		} else {
-			return nil, fmt.Errorf("no run.py, app.py, or flask command found")
+			return nil, fmt.Errorf("no run.py, app.py, main.py, app/main.py, or flask command found")
 		}
 	}
 
@@ -366,7 +453,8 @@ func streamOutput(r io.Reader, prefix string) {
 }
 
 // waitForApp waits for the app to be ready by checking health endpoints
-func waitForApp(port int, timeout time.Duration) error {
+// If appCmd is provided, it also checks if the process has exited
+func waitForApp(port int, timeout time.Duration, appCmd *exec.Cmd) error {
 	fmt.Println("Waiting for app to start...")
 
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
@@ -381,10 +469,20 @@ func waitForApp(port int, timeout time.Duration) error {
 	ticker := time.NewTicker(1 * time.Second)
 	defer ticker.Stop()
 
+	// Channel to detect if process exits
+	processDone := make(chan error, 1)
+	if appCmd != nil && appCmd.Process != nil {
+		go func() {
+			processDone <- appCmd.Wait()
+		}()
+	}
+
 	for {
 		select {
 		case <-ctx.Done():
 			return fmt.Errorf("timeout waiting for app to start")
+		case err := <-processDone:
+			return fmt.Errorf("app process exited: %v", err)
 		case <-ticker.C:
 			// Try each URL
 			for _, url := range urls {

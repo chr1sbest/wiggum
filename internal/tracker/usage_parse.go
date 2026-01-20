@@ -38,6 +38,7 @@ func ParseClaudeUsageFromOutput(output string) (UsageDelta, bool) {
 	out := findInt(v, []string{"output_tokens", "completion_tokens"})
 	total := findInt(v, []string{"total_tokens", "tokens"})
 	cost := findFloat(v, []string{"total_cost", "cost", "total_cost_usd", "cost_usd"})
+	turns := findInt(v, []string{"num_turns"})
 
 	if total == 0 {
 		if input > 0 || out > 0 {
@@ -57,7 +58,7 @@ func ParseClaudeUsageFromOutput(output string) (UsageDelta, bool) {
 		return UsageDelta{}, false
 	}
 
-	return UsageDelta{InputTokens: input, OutputTokens: out, TotalTokens: total, CostUSD: cost}, true
+	return UsageDelta{InputTokens: input, OutputTokens: out, TotalTokens: total, CostUSD: cost, Turns: turns}, true
 }
 
 // extractLastJSON finds and parses the last valid JSON object in the text.

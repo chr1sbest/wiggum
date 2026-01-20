@@ -15,6 +15,7 @@ import (
 // RunMetrics represents the metrics stored in .ralph/run_metrics.json
 type RunMetrics struct {
 	TotalClaudeCalls int     `json:"total_claude_calls"`
+	TotalTurns       int     `json:"total_turns"`
 	InputTokens      int     `json:"input_tokens"`
 	OutputTokens     int     `json:"output_tokens"`
 	TotalTokens      int     `json:"total_tokens"`
@@ -113,6 +114,7 @@ func runRalphApproach(config *RunConfig, suite *SuiteConfig) (*EvalResult, error
 		Timestamp:       startTime,
 		DurationSeconds: duration,
 		TotalCalls:      metrics.TotalClaudeCalls,
+		TotalTurns:      metrics.TotalTurns,
 		InputTokens:     metrics.InputTokens,
 		OutputTokens:    metrics.OutputTokens,
 		TotalTokens:     metrics.TotalTokens,
@@ -144,6 +146,7 @@ type ClaudeOutput struct {
 	InputTokens  int     `json:"input_tokens"`
 	OutputTokens int     `json:"output_tokens"`
 	TotalCostUSD float64 `json:"total_cost_usd"`
+	Turns        int     `json:"num_turns"`
 }
 
 // runOneshotApproach executes the oneshot approach for an evaluation.
@@ -274,6 +277,7 @@ Create all the files now.`, string(requirementsContent))
 		Timestamp:       startTime,
 		DurationSeconds: duration,
 		TotalCalls:      1, // Oneshot always has exactly 1 call
+		TotalTurns:      claudeOutput.Turns,
 		InputTokens:     claudeOutput.InputTokens,
 		OutputTokens:    claudeOutput.OutputTokens,
 		TotalTokens:     totalTokens,
@@ -303,6 +307,7 @@ func parseClaudeOutput(outputPath string) (*ClaudeOutput, error) {
 		InputTokens:  usage.InputTokens,
 		OutputTokens: usage.OutputTokens,
 		TotalCostUSD: usage.CostUSD,
+		Turns:        usage.Turns,
 	}, nil
 }
 
