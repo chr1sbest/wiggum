@@ -31,13 +31,18 @@ func TestSaveOutput_JSON(t *testing.T) {
 		t.Errorf("Expected loop_1.md to exist")
 	}
 
-	// Verify JSON content
+	// Verify JSON content (pretty-printed)
 	jsonContent, err := os.ReadFile(jsonPath)
 	if err != nil {
 		t.Fatalf("Failed to read JSON file: %v", err)
 	}
-	if string(jsonContent) != jsonOutput {
-		t.Errorf("JSON content mismatch. Expected %q, got %q", jsonOutput, string(jsonContent))
+	expectedJSON := `{
+  "result": "This is the result text",
+  "session_id": "test-123",
+  "type": "result"
+}`
+	if string(jsonContent) != expectedJSON {
+		t.Errorf("JSON content mismatch. Expected %q, got %q", expectedJSON, string(jsonContent))
 	}
 
 	// Verify markdown content contains just the result
