@@ -79,25 +79,8 @@ func (s *AgentStep) Execute(ctx context.Context, rawConfig json.RawMessage) erro
 		s.exitDetector.Reset()
 	}
 
-	// Load PRD status to check exit conditions
-	prdStatus, err := agent.LoadPRDStatus(cfg.PrdFile)
-	if err != nil {
-		return fmt.Errorf("failed to load prd status: %w", err)
-	}
-
-	// Check if we should exit before starting
-	completedBefore := 0
-	if prdStatus != nil {
-		completedBefore = prdStatus.CompletedTasks
-	}
-	if exitReason := s.exitDetector.Check(prdStatus != nil && prdStatus.IsComplete(), completedBefore); exitReason != agent.ExitReasonNone {
-		return &AgentExitError{Reason: exitReason}
-	}
-
-	// Exit early if no actionable tasks (all done or failed, none todo)
-	if prdStatus != nil && !prdStatus.HasActionableTasks() && prdStatus.TotalTasks > 0 {
-		return &AgentExitError{Reason: agent.ExitReasonNoActionableTasks}
-	}
+	// Load PRD status for context building (exit check is handled by loop.go preflight)
+	prdStatus, _ := agent.LoadPRDStatus(cfg.PrdFile)
 
 	// Read prompt file
 	promptContent, err := os.ReadFile(cfg.PromptFile)
@@ -173,6 +156,10 @@ func (s *AgentStep) Execute(ctx context.Context, rawConfig json.RawMessage) erro
 	if prdStatusAfter != nil {
 		completedAfter = prdStatusAfter.CompletedTasks
 	}
+
+	// Mark loop complete for no-progress tracking (once per loop, not per check)
+	s.exitDetector.MarkLoopComplete(completedAfter)
+
 	if exitReason := s.exitDetector.Check(planComplete, completedAfter); exitReason != agent.ExitReasonNone {
 		return &AgentExitError{Reason: exitReason}
 	}

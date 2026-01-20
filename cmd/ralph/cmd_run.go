@@ -30,7 +30,7 @@ func runCmd(args []string) int {
 		}
 	}
 	fs := flag.NewFlagSet("run", flag.ExitOnError)
-	configFile := fs.String("config", ".ralph/configs/default.json", "Path to config file")
+	configFile := fs.String("config", ".ralph/config.json", "Path to config file")
 	model := fs.String("model", "", "Claude model to use (overrides agent step config)")
 	once := fs.Bool("once", false, "Run loop only once")
 	fs.Parse(args)
@@ -74,7 +74,7 @@ func runCmd(args []string) int {
 	registry.Register("agent", func() loop.Step { return steps.NewAgentStep() })
 	registry.Register("git-commit", func() loop.Step { return steps.NewGitCommitStep() })
 
-	loader := config.NewLoader(".ralph/configs")
+	loader := config.NewLoader(".ralph")
 	cfg, err := loader.LoadAndValidate(*configFile, registry.RegisteredTypes())
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)

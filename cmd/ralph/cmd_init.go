@@ -156,7 +156,6 @@ Examples:
 	ralphDir := ".ralph"
 
 	dirs := []string{
-		filepath.Join(ralphDir, "configs"),
 		filepath.Join(ralphDir, "logs"),
 		filepath.Join(ralphDir, "prompts"),
 	}
@@ -200,8 +199,8 @@ Examples:
 		fmt.Fprintf(os.Stderr, "Failed to render default config: %v\n", err)
 		os.Exit(1)
 	}
-	if err := os.WriteFile(filepath.Join(ralphDir, "configs", "default.json"), []byte(configContent), 0644); err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to create default config: %v\n", err)
+	if err := os.WriteFile(filepath.Join(ralphDir, "config.json"), []byte(configContent), 0644); err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to create config.json: %v\n", err)
 		os.Exit(1)
 	}
 
@@ -429,7 +428,7 @@ func initExistingRepo(projectName, model string) {
 
 	// Create .ralph directory structure
 	ralphDir := ".ralph"
-	for _, dir := range []string{ralphDir, filepath.Join(ralphDir, "prompts"), filepath.Join(ralphDir, "configs"), filepath.Join(ralphDir, "logs")} {
+	for _, dir := range []string{ralphDir, filepath.Join(ralphDir, "prompts"), filepath.Join(ralphDir, "logs")} {
 		if err := os.MkdirAll(dir, 0755); err != nil {
 			fmt.Fprintf(os.Stderr, "Failed to create directory %s: %v\n", dir, err)
 			os.Exit(1)
@@ -453,8 +452,8 @@ func initExistingRepo(projectName, model string) {
 		fmt.Fprintf(os.Stderr, "Failed to render default config: %v\n", err)
 		os.Exit(1)
 	}
-	if err := os.WriteFile(filepath.Join(ralphDir, "configs", "default.json"), []byte(configContent), 0644); err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to create default config: %v\n", err)
+	if err := os.WriteFile(filepath.Join(ralphDir, "config.json"), []byte(configContent), 0644); err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to create config.json: %v\n", err)
 		os.Exit(1)
 	}
 

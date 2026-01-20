@@ -36,19 +36,26 @@ func (d *ExitDetector) Check(planComplete bool, completedCount int) ExitReason {
 	}
 
 	// Track no progress based on prd.json task completion
+	// Only count as no-progress if we've seen this count before (prevents double-counting per loop)
 	hasPrdProgress := completedCount > d.lastCompletedCount
 	if hasPrdProgress {
 		d.lastCompletedCount = completedCount
 		d.consecutiveNoProgress = 0
-	} else {
-		d.consecutiveNoProgress++
 	}
+	// Note: consecutiveNoProgress is incremented by MarkLoopComplete, not here
 
 	if d.consecutiveNoProgress >= d.NoProgressThreshold {
 		return ExitReasonNoProgress
 	}
 
 	return ExitReasonNone
+}
+
+// MarkLoopComplete should be called once per loop iteration to track no-progress
+func (d *ExitDetector) MarkLoopComplete(completedCount int) {
+	if completedCount <= d.lastCompletedCount {
+		d.consecutiveNoProgress++
+	}
 }
 
 // Reset clears all counters
