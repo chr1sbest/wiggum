@@ -121,3 +121,7 @@ Ralph allows the agent to complete multiple tasks per loop iteration if it choos
 - **Major increase** in token cost (context resets on every task)
 
 The flexibility to batch related tasks appears to be the right default. It reduces cost without sacrificing quality.
+
+**3. Greenfield bias**
+
+Both eval suites are greenfield projects built from scratch. Context rot and compaction are less of a problem when there's no existing codebase to navigate. In large, complex codebases where the agent must read and modify existing code across many files, Ralph's context resets might provide more benefit by preventing accumulated context from degrading quality. These evals don't capture that scenario.

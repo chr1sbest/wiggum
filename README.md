@@ -33,6 +33,17 @@ In short, this implementation:
 
 3. Answers the question of "is the tradeoff of context reset worth the extra token cost?"
 
+### How does it perform?
+
+We ran capability evals comparing Ralph against a oneshot approach (same prompts, same model, no context resets). See [evals/RESULTS.md](evals/RESULTS.md) for full details.
+
+| Suite | Ralph | Oneshot | Δ Tasks |
+|-------|-------|---------|---------|
+| workflow | 85% (41/48) | 83% (40/48) | +2.5% |
+| tasktracker | 93% (26/28) | 82% (23/28) | +13% |
+
+**Result:** The Ralph Loop passes 2-13% more tasks but costs 1.5-5x more. The context resets provide marginal quality improvement. The bigger value is in the task decomposition and explicit test criteria that the Ralph methodology prescribes, regardless of looping.
+
 ## Usage
 
 Ralph works like `git init` — run it in the directory where you want to work. It creates a `.ralph/` folder with your task list and configuration, and adds `.ralph/` to your `.gitignore`.
