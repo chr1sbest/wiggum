@@ -7,8 +7,8 @@
 .circuit_breaker_*
 .exit_signals
 .last_reset
-.ralph_session
-.ralph_session_history
+.ralph/.ralph_session
+.ralph/.ralph_session_history
 .response_analysis
 progress.json
 status.json

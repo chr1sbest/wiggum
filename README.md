@@ -13,27 +13,65 @@ brew tap chr1sbest/tap
 brew install ralph
 ```
 
-## What's the Ralph Loop?
-The Ralph Loop is `while :; do cat PROMPT.md | claude-code ; done`
+## What's the Ralph Wiggum Loop?
 
-This outer loop around Claude Code attempts to reduce LLM context rot by "resetting memory" between runs. Each run of the loop rebuilds Ralph's context from scratch and attempts to solve chunks of work defined in a `prd.json` file.
+The Ralph Wiggum Loop is `while :; do cat PROMPT.md | claude-code ; done`
 
-## Whats unique about this loop implementation?
+This simple bash script attempts to enable fully-automated development while addressing several problems cited by Anthropic's ["Effective harnesses for long-running agents."](https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents)
 
-The Ralph Loop at its simplest requires human intervention to stop it. To reduce the need for human intervention, this tool adds a few bells and whistles:
+Most of the magic is within `PROMPT.md`, but the surrounding `while` loop aims to address the context rot of long-running agents by resetting sessions between each attempt. Through tight scoping and well-defined success criteria (guided by `PROMPT.md`), Ralph can iteratively work through problems, resetting and rebuilding context for each task.
 
-- Monitoring and Cost Analysis
-- Evaluation Framework
-- Resilience Framework (retries, locks, circuit breakers)
+## What's the purpose of this project?
+
+This project aims to minimally build upon Ralph's intentions of *simplicity* and *fully automated development* while addressing common pitfalls of agent orchestration. This implementation adds guardrails, evaluation frameworks, and monitoring for time and cost.
+
+In short, this implementation:
+
+1. Can be used in existing or new codebases with simple commands
+
+2. Can reliably execute and finish work without human intervention
+
+3. Answers the question of "is the tradeoff of context reset worth the extra token cost?"
+
+## Comparisons
+
+### Official Claude Ralph Loop Plugin
+
+The "Official" [ralph-wiggum](https://github.com/anthropics/claude-code/tree/main/plugins/ralph-wiggum) plugin for Claude maintains a session *across* runs instead of resetting context *between* runs. This plugin is not technically a "Ralph Loop", but it effectively applies best practices around scoping and well-defined success criteria.
+
+**Official Plugin**
+- No Context Resets
+- Callable from within Claude only, limited monitoring
+- LLM-triggered exit conditions
+
+**This Project**
+- Default to Context Resets
+- Callable from Command line with monitoring
+- Deterministic Exit Conditions
+
+### Simple Bash Script
+
+Originally published by [Geoffrey Huntley](https://ghuntley.com/ralph/), this simple `while :; do cat PROMPT.md | claude-code ; done` script will run infinitely until a human intervenes.
+
+**Bash Script**
+- Requires human intervention to stop
+- No guardrails
+- No tracking or metriccs
+- Infinite cost
+
+**This Project**
+- Has clear exit conditions to end automation
+- Has guardrails, circuit breakers, and timeouts
+- Monitors cost and token usage
+
+## Usage
+
+Ralph works like `git init` — run it in the directory where you want to work. It creates a `.ralph/` folder with your task list and configuration, and adds `.ralph/` to your `.gitignore`.
 
 ### Requirements
 
 - **[Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code/overview)** must be installed and available on your `PATH` as `claude`.
 - Ralph invokes Claude Code with **tool access enabled** (unsafe mode).
-
-## Usage
-
-Ralph works like `git init` — run it in the directory where you want to work. It creates a `.ralph/` folder with your task list and configuration, and adds `.ralph/` to your `.gitignore`.
 
 ### New Projects
 
@@ -212,22 +250,6 @@ Claude output logs are written to `.ralph/logs/`:
 If you hit a quota limit, wait for your quota to reset and rerun `ralph run`.
 
 ## Contributing (5 min quickstart)
-
-Contributions welcome! Here's how to get started:
-
-```bash
-# Run tests
-make test
-
-# Format code
-make fmt
-
-# Run all CI checks (tests + format check)
-make ci
-
-# Install locally for testing
-make install
-```
 
 We provide a Makefile for common dev tasks. Run `make help` to see all available targets.
 
