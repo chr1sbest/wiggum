@@ -247,7 +247,7 @@ func evalCompareCmd(args []string) int {
 		fmt.Print(`eval compare 📊  Compare ralph vs oneshot results
 
 Usage:
-  ralph eval compare <suite> [flags]
+  ralph eval compare <suite> [--model <model>]
 
 Flags:
   --model string       Claude model to compare (default "sonnet")
@@ -258,11 +258,15 @@ Description:
 
 Examples:
   ralph eval compare flask
-  ralph eval compare logagg --model opus
+  ralph eval compare workflow --model opus
 `)
 	}
 
-	if err := fs.Parse(args); err != nil {
+	// Reorder args to put flags before positional arguments
+	// This allows: "compare workflow --model opus" to work like "compare --model opus workflow"
+	reorderedArgs := reorderArgsForFlags(args, []string{"model"})
+
+	if err := fs.Parse(reorderedArgs); err != nil {
 		if errors.Is(err, flag.ErrHelp) {
 			fs.Usage()
 			return 0
@@ -300,4 +304,40 @@ Examples:
 	}
 
 	return 0
+}
+
+// reorderArgsForFlags reorders args so flags come before positional arguments
+// This allows "cmd arg --flag value" to work like "cmd --flag value arg"
+func reorderArgsForFlags(args []string, flagNames []string) []string {
+	var flags []string
+	var positional []string
+
+	i := 0
+	for i < len(args) {
+		arg := args[i]
+		isFlag := false
+		for _, name := range flagNames {
+			if arg == "--"+name || arg == "-"+name {
+				// Flag with separate value
+				if i+1 < len(args) {
+					flags = append(flags, arg, args[i+1])
+					i += 2
+					isFlag = true
+					break
+				}
+			} else if len(arg) > len("--"+name+"=") && arg[:len("--"+name+"=")] == "--"+name+"=" {
+				// Flag with = value
+				flags = append(flags, arg)
+				i++
+				isFlag = true
+				break
+			}
+		}
+		if !isFlag {
+			positional = append(positional, arg)
+			i++
+		}
+	}
+
+	return append(flags, positional...)
 }

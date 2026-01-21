@@ -33,37 +33,6 @@ In short, this implementation:
 
 3. Answers the question of "is the tradeoff of context reset worth the extra token cost?"
 
-## Comparisons
-
-### Official Claude Ralph Loop Plugin
-
-The "Official" [ralph-wiggum](https://github.com/anthropics/claude-code/tree/main/plugins/ralph-wiggum) plugin for Claude maintains a session *across* runs instead of resetting context *between* runs. This plugin is not technically a "Ralph Loop", but it effectively applies best practices around scoping and well-defined success criteria.
-
-**Official Plugin**
-- No Context Resets
-- Callable from within Claude only, limited monitoring
-- LLM-triggered exit conditions
-
-**This Project**
-- Default to Context Resets
-- Callable from Command line with monitoring
-- Deterministic Exit Conditions
-
-### Simple Bash Script
-
-Originally published by [Geoffrey Huntley](https://ghuntley.com/ralph/), this simple `while :; do cat PROMPT.md | claude-code ; done` script will run infinitely until a human intervenes.
-
-**Bash Script**
-- Requires human intervention to stop
-- No guardrails
-- No tracking or metriccs
-- Infinite cost
-
-**This Project**
-- Has clear exit conditions to end automation
-- Has guardrails, circuit breakers, and timeouts
-- Monitors cost and token usage
-
 ## Usage
 
 Ralph works like `git init` — run it in the directory where you want to work. It creates a `.ralph/` folder with your task list and configuration, and adds `.ralph/` to your `.gitignore`.
@@ -132,44 +101,36 @@ Next step:
 ralph run
 ```
 
-### Open a pull request
+## Comparisons
 
-Use `pr` to push your branch and open a pull request with an auto-generated summary:
+### Official Claude Ralph Loop Plugin
 
-```bash
-# Create a feature branch
-git checkout -b feature/my-feature
+The "Official" [ralph-wiggum](https://github.com/anthropics/claude-code/tree/main/plugins/ralph-wiggum) plugin for Claude maintains a session *across* runs instead of resetting context *between* runs. This plugin is not technically a "Ralph Loop", but it effectively applies best practices around scoping and well-defined success criteria.
 
-# Do work
-ralph run
+**Official Plugin**
+- No Context Resets
+- Callable from within Claude only, limited monitoring
+- LLM-triggered exit conditions
 
-# Push and open PR
-ralph pr
-```
+**This Project**
+- Default to Context Resets
+- Callable from Command line with monitoring
+- Deterministic Exit Conditions
 
-Options:
-- `--draft` - Create as draft PR
-- `--title "Custom title"` - Override auto-generated title
-- `--base develop` - Target a different base branch (default: main)
+### Simple Bash Script
 
-The PR body is auto-generated from `.ralph/prd.json`, listing completed tasks and any linked GitHub issues.
+Originally published by [Geoffrey Huntley](https://ghuntley.com/ralph/), this simple `while :; do cat PROMPT.md | claude-code ; done` script will run infinitely until a human intervenes.
 
-### Run evaluations
+**Bash Script**
+- Requires human intervention to stop
+- No guardrails
+- No tracking or metriccs
+- Infinite cost
 
-Use `eval` to run evaluation suites and compare ralph vs oneshot approaches:
-
-```bash
-# List available evaluation suites
-ralph eval list
-
-# Run an evaluation suite
-ralph eval run flask --approach ralph
-
-# Compare results between approaches
-ralph eval compare flask
-```
-
-Evaluation suites are defined in `evals/suites/` and results are saved to `evals/results/`.
+**This Project**
+- Has clear exit conditions to end automation
+- Has guardrails, circuit breakers, and timeouts
+- Monitors cost and token usage
 
 ## Development
 
@@ -205,13 +166,20 @@ brew upgrade ralph
 your-project/
 ├── .ralph/
 │   ├── prd.json              # Task list (source of truth)
+│   ├── prd_archive.json      # Completed/archived tasks
 │   ├── requirements.md       # Original requirements
-│   ├── configs/default.json  # Loop configuration
-│   ├── prompts/              # SETUP_PROMPT.md, LOOP_PROMPT.md
-│   ├── logs/                 # Claude output logs
+│   ├── configs/
+│   │   └── default.json      # Loop configuration
+│   ├── prompts/
+│   │   ├── SETUP_PROMPT.md   # Initial setup prompt
+│   │   └── LOOP_PROMPT.md    # Main loop prompt
+│   ├── logs/
+│   │   ├── loop_N.json       # Raw Claude output per loop
+│   │   └── loop_N.md         # Human-readable summary
 │   ├── run_state.json        # Current run state
 │   ├── run_metrics.json      # Token/cost/time metrics
-│   └── .ralph_lock           # Prevents concurrent runs
+│   ├── aggregate.json        # Aggregate metrics across runs
+│   └── .ralph_session        # Session file for context
 ├── your code files...        # Application code goes here
 └── README.md
 ```

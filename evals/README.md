@@ -1,26 +1,39 @@
 # Ralph Evals
 
-Evaluation framework for comparing agent frameworks on code generation tasks.
+Evaluation harness for comparing agent harnesses on code generation tasks.
 
 ## Latest Results
 
-See **[RESULTS.md](RESULTS.md)** for the latest comparison data.
+See **[RESULTS.md](RESULTS.md)** for capability eval results.
 
-| Suite | Ralph | Oneshot | Winner |
-|-------|-------|---------|--------|
-| workflow | 41/48 (85%) | 40/48 (83%) | Ralph +2.5% |
-| tasktracker | 26/28 (93%) | 23/28 (82%) | Ralph +13% |
+| Suite | Ralph | Oneshot | Δ Tasks |
+|-------|-------|---------|---------|
+| workflow | 41/48 (85%) | 40/48 (83%) | +2.5% |
+| tasktracker | 26/28 (93%) | 23/28 (82%) | +13% |
 
-**Key finding:** Ralph costs 1.5-5x more and takes longer, but passes 2-13% more tests. The tradeoff favors Ralph when correctness matters more than speed or cost.
+**Key finding:** Ralph costs 1.5-5x more and takes longer, but passes 2-13% more tasks. The tradeoff favors Ralph when correctness matters more than speed or cost.
+
+## Terminology
+
+Following [Anthropic's eval framework](https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents):
+
+| Term | Definition |
+|------|------------|
+| **Task** | A single test case with defined inputs and success criteria |
+| **Trial** | One attempt at a task (we run one trial per task currently) |
+| **Grader** | Logic that scores the agent's outcome (we use deterministic graders) |
+| **Outcome** | The final state: the generated code that graders evaluate |
+| **Transcript** | Complete record of a trial including all tool calls and responses |
+| **Evaluation suite** | Collection of tasks measuring specific capabilities |
+| **Evaluation harness** | Infrastructure that runs evals end-to-end (this repo) |
+| **Agent harness** | System that orchestrates the model (Ralph or Oneshot) |
 
 ## Design Principles
 
-When writing evals, follow these principles:
-
-- **Determine winner between multiple agent frameworks** given the same input requirements
-- **Scripts to run any framework** - oneshot, ralph, or other agent frameworks
-- **Outputs metrics and a working product** - not just metrics, but actual runnable code
-- **Shared test framework** - same tests run against all implementations for fair comparison
+- **Compare agent harnesses fairly** - Same tasks, same graders, same model
+- **Grade outcomes, not paths** - Test what the agent produced, not how it got there
+- **Deterministic graders** - Code-based tests that pass or fail objectively
+- **Isolated trials** - Each trial starts from a clean environment
 
 ## Quick Start
 
@@ -39,14 +52,14 @@ ralph eval compare tasktracker
 ## CLI Commands
 
 ### `ralph eval list`
-Lists all available evaluation suites by scanning `evals/suites/*/suite.yaml` files.
+Lists all available evaluation suites.
 
 ### `ralph eval run <suite> [flags]`
-Runs an evaluation suite with the specified approach and model.
+Runs all tasks in a suite with the specified agent harness and model.
 
 **Flags:**
-- `--approach` - Approach to use: `ralph` or `oneshot` (default: ralph)
-- `--model` - Model to use: `sonnet`, `opus`, or `haiku` (default: sonnet)
+- `--approach` - Agent harness: `ralph` or `oneshot` (default: ralph)
+- `--model` - Model: `sonnet`, `opus`, or `haiku` (default: sonnet)
 
 **Examples:**
 ```bash
@@ -55,30 +68,30 @@ ralph eval run tasktracker --approach oneshot --model opus
 ```
 
 ### `ralph eval compare <suite>`
-Compares the most recent ralph and oneshot results for a suite, displaying metrics side-by-side.
+Compares the most recent Ralph and Oneshot results, showing tasks passed and tracked metrics.
 
 ## Suite Configuration Format
 
-Each evaluation suite is defined by a `suite.yaml` file in `evals/suites/<suite-name>/`. The YAML format specifies all information needed to run and test the suite.
+Each evaluation suite is defined by a `suite.yaml` file in `evals/suites/<suite-name>/`.
 
 ### Suite YAML Schema
 
 ```yaml
-name: string              # Suite identifier (usually matches directory name)
+name: string              # Suite identifier
 description: string       # Brief description of what's being built
-requirements: string      # Path to requirements.md file (relative to repo root)
+requirements: string      # Path to task specification (requirements.md)
 language: string          # Primary language: go, python, etc.
 type: string              # Suite type: "web" or "cli"
-timeout: string          # Max time allowed (e.g., "30m", "1h", "2h")
+timeout: string           # Max time for trial (e.g., "45m")
 
-setup:                   # Optional setup commands (run before tests)
+setup:                    # Optional setup commands (run before graders)
   - command1
   - command2
 ```
 
 **Suite Types:**
-- `web` - Web applications. Starts the server, runs pytest tests from `tests/` directory.
-- `cli` - CLI tools. Builds the binary, runs Go-based tests from `internal/eval/cli_tests.go`.
+- `web` - Web applications. Graders are pytest tests in `tests/` directory.
+- `cli` - CLI tools. Graders are Go-based tests in `internal/eval/`.
 
 ### Example: Flask Suite (Web App)
 
@@ -121,9 +134,9 @@ type: cli
 timeout: 1h
 ```
 
-## Result JSON Schema
+## Trial Result Schema
 
-Evaluation results are saved as JSON files in `evals/results/` with the naming pattern:
+Trial results are saved as JSON in `evals/results/`:
 ```
 <suite>-<approach>-<model>-<timestamp>.json
 ```
@@ -132,21 +145,21 @@ Evaluation results are saved as JSON files in `evals/results/` with the naming p
 
 ```json
 {
-  "suite": "string",              // Suite name (e.g., "tasktracker")
-  "approach": "string",           // "ralph" or "oneshot"
+  "suite": "string",              // Evaluation suite name
+  "approach": "string",           // Agent harness: "ralph" or "oneshot"
   "model": "string",              // Model used (e.g., "sonnet")
-  "timestamp": "string",          // ISO 8601 timestamp (e.g., "2025-01-19T12:34:56Z")
-  "duration_seconds": number,     // Total elapsed time in seconds
-  "total_calls": number,          // Number of Claude API calls made
-  "input_tokens": number,         // Total input tokens consumed
-  "output_tokens": number,        // Total output tokens generated
-  "total_tokens": number,         // Sum of input + output tokens
-  "cost_usd": number,            // Estimated cost in USD
-  "shared_tests_passed": number,  // Number of shared tests that passed
-  "shared_tests_total": number,   // Total number of shared tests
-  "files_generated": number,      // Number of files created
-  "lines_generated": number,      // Total lines of code generated
-  "output_dir": "string"         // Path to generated project directory
+  "timestamp": "string",          // ISO 8601 timestamp
+  "duration_seconds": number,     // Trial duration
+  "total_calls": number,          // Claude API calls in transcript
+  "input_tokens": number,         // Input tokens consumed
+  "output_tokens": number,        // Output tokens generated
+  "total_tokens": number,         // Total tokens
+  "cost_usd": number,             // Estimated cost
+  "shared_tests_passed": number,  // Tasks passed by graders
+  "shared_tests_total": number,   // Total tasks in suite
+  "files_generated": number,      // Files in outcome
+  "lines_generated": number,      // Lines of code in outcome
+  "output_dir": "string"          // Path to outcome directory
 }
 ```
 
@@ -174,16 +187,14 @@ Evaluation results are saved as JSON files in `evals/results/` with the naming p
 
 ## Adding a New Evaluation Suite
 
-To add a new evaluation suite:
-
-### 1. Create Requirements Document
+### 1. Create Task Specification
 
 Create a requirements file in `examples/`:
 ```bash
 touch examples/my_feature_requirements.md
 ```
 
-Write clear, detailed requirements for what should be built.
+Write clear requirements for what the agent should build.
 
 ### 2. Create Suite Directory
 
@@ -193,97 +204,85 @@ mkdir -p evals/suites/myfeature/tests
 
 ### 3. Create suite.yaml
 
-Create `evals/suites/myfeature/suite.yaml`:
 ```yaml
 name: myfeature
 description: Brief description of what's being built
 requirements: examples/my_feature_requirements.md
-language: python  # or go, etc.
+language: python  # or go
 type: web         # or cli
-timeout: 1h
+timeout: 45m
 
 setup:
   - python3 -m venv venv
   - source venv/bin/activate && pip install -r requirements.txt
 ```
 
-### 4. Write Shared Tests
+### 4. Write Graders
 
-Create implementation-agnostic tests in `evals/suites/myfeature/tests/`:
+**For web suites (`type: web`)**: Create pytest tests in `evals/suites/myfeature/tests/`
 
-**conftest.py** - Pytest fixtures:
-```python
-import pytest
-import requests
+**For CLI suites (`type: cli`)**: Create Go tests in `internal/eval/`. Example:
 
-@pytest.fixture
-def base_url():
-    return "http://localhost:8000"
-
-@pytest.fixture
-def api_client(base_url):
-    session = requests.Session()
-    session.headers.update({"Content-Type": "application/json"})
-    return session
+```go
+// internal/eval/myfeature_tests.go
+func RunMyFeatureTests(appDir, fixturesDir string) (*TestResult, error) {
+    r := NewCLITestRunner(appDir, "myfeature")
+    
+    // Build the binary
+    r.RunTestExitCode("build succeeds", "go build -o myfeature .", 0)
+    
+    // Test functionality
+    r.RunTest("basic command works", "./myfeature run input.txt", "expected output")
+    
+    return &TestResult{Passed: r.Passed, Failed: r.Failed, Total: r.GetTotal()}, nil
+}
 ```
 
-**test_feature.py** - Actual tests:
-```python
-def test_basic_functionality(api_client, base_url):
-    response = api_client.get(f"{base_url}/endpoint")
-    assert response.status_code == 200
-    # Add more assertions...
-```
-
-### 5. Test Your Suite
+### 5. Run the Suite
 
 ```bash
 ralph eval run myfeature --approach ralph --model sonnet
 ```
 
-### Guidelines for Writing Tests
+### Guidelines for Writing Graders
 
-- **Test the contract, not the implementation** - Tests should work regardless of how the feature is implemented
-- **Use fixtures for setup** - Keep tests DRY by using pytest fixtures for common setup
-- **Be explicit about requirements** - Each test should clearly validate one specific requirement
-- **Fail fast with clear messages** - Use descriptive assertion messages
-- **Avoid implementation details** - Don't test internal function names, variable names, or file structure
+- **Grade outcomes, not paths** - Test what the agent produced, not how it got there
+- **Use deterministic graders** - Objective pass/fail based on the outcome
+- **One task per test** - Each test should validate one specific capability
+- **Avoid implementation details** - Don't test internal names or file structure
 
-## Key Concept: Shared Test Suites
-
-The framework uses **shared test suites** in `suites/<name>/tests/` that are run against BOTH ralph and oneshot outputs. This ensures fair comparison - both implementations are tested against the same requirements.
+## Architecture
 
 ```
 evals/
 ├── suites/
 │   ├── flask/
-│   │   ├── suite.yaml       # Configuration (type: web)
-│   │   └── tests/           # Pytest test suite
-│   │       ├── conftest.py
-│   │       └── test_app.py
+│   │   ├── suite.yaml       # Suite config (type: web)
+│   │   └── tests/           # Pytest graders
 │   ├── tasktracker/
-│   │   ├── suite.yaml       # Configuration (type: web)
-│   │   └── tests/
-│   │       ├── conftest.py
-│   │       ├── test_auth.py
-│   │       └── test_tasks.py
-│   └── logagg/
-│       ├── suite.yaml       # Configuration (type: cli)
-│       └── fixtures/        # Test fixtures for CLI tool
-└── results/                 # Generated result JSON files
+│   │   ├── suite.yaml       # Suite config (type: web)
+│   │   └── tests/           # Pytest graders
+│   └── workflow/
+│       ├── suite.yaml       # Suite config (type: cli)
+│       └── fixtures/        # Test fixtures for Go graders
+└── results/                 # Trial results (JSON)
+
+internal/eval/
+├── workflow_tests.go        # Go graders for workflow CLI
+├── cli_tests.go             # Go graders for logagg CLI
+└── tasktracker_tests.go     # Go graders for tasktracker API
 ```
 
-**Note:** CLI tools (`type: cli`) have their tests defined in Go at `internal/eval/cli_tests.go`.
+## Tracked Metrics
 
-## What's Measured
-
-- **Duration**: Total elapsed time in seconds
-- **API Calls**: Number of Claude API calls made
-- **Tokens**: Input, output, and total token usage
-- **Cost**: Estimated cost in USD based on token usage
-- **Test Results**: Number of shared tests passed vs. total
-- **Code Generated**: File count and line count
+| Metric | Description |
+|--------|-------------|
+| **Tasks passed** | Number of tasks where graders passed |
+| **Duration** | Total trial time in seconds |
+| **Tokens** | Input, output, and total token usage |
+| **Cost** | Estimated cost in USD |
+| **Code** | Files and lines in outcome |
 
 ## Results Storage
 
-Results are saved to `evals/results/` and gitignored to prevent bloat. Each run generates a single JSON file with all metrics.
+Trial results are saved to `evals/results/` (gitignored). Each trial generates one JSON file with all metrics and can be compared across agent harnesses.

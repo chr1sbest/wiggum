@@ -393,7 +393,7 @@ func printBanner(config *RunConfig) {
 	fmt.Printf("║                    EVAL: %-32s║\n", config.SuiteName)
 	fmt.Printf("║  Approach: %-8s | Model: %-28s║\n", config.Approach, config.Model)
 	fmt.Printf("║  Started: %-46s║\n", time.Now().Format("2006-01-02 15:04:05"))
-	fmt.Println("║  Timeout: 2 hours                                            ║")
+	fmt.Printf("║  Timeout: %-50s║\n", formatDuration(config.TimeoutSeconds))
 	fmt.Println("╚══════════════════════════════════════════════════════════════╝")
 	fmt.Println("")
 }
@@ -415,4 +415,17 @@ func printSummary(result *EvalResult, resultPath string) {
 	fmt.Println("")
 	fmt.Printf("Results: %s\n", resultPath)
 	fmt.Println("")
+}
+
+// formatDuration converts seconds to a human-readable duration string
+func formatDuration(seconds int) string {
+	if seconds >= 3600 {
+		hours := seconds / 3600
+		mins := (seconds % 3600) / 60
+		if mins > 0 {
+			return fmt.Sprintf("%dh %dm", hours, mins)
+		}
+		return fmt.Sprintf("%d hours", hours)
+	}
+	return fmt.Sprintf("%d minutes", seconds/60)
 }

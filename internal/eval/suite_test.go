@@ -114,8 +114,8 @@ func TestLoadSuiteFields(t *testing.T) {
 	if config.Language != "go" {
 		t.Errorf("Language = %v, want go", config.Language)
 	}
-	if config.Timeout != "1h" {
-		t.Errorf("Timeout = %v, want 1h", config.Timeout)
+	if config.Timeout != "45m" {
+		t.Errorf("Timeout = %v, want 45m", config.Timeout)
 	}
 	if config.Type != SuiteTypeCLI {
 		t.Errorf("Type = %v, want cli", config.Type)
