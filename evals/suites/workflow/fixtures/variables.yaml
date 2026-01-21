@@ -1,0 +1,13 @@
+name: variable-workflow
+vars:
+  greeting: Hello
+  target: World
+  version: "1.0.0"
+
+steps:
+  - id: greet
+    run: 'echo "${{ vars.greeting }}, ${{ vars.target }}!"'
+
+  - id: version
+    run: 'echo "Version: ${{ vars.version }}"'
+    needs: [greet]

@@ -1,0 +1,15 @@
+name: failure-condition-workflow
+steps:
+  - id: might-fail
+    run: exit 1
+    continue_on_error: true
+
+  - id: on-failure
+    run: echo "Running because of failure"
+    needs: [might-fail]
+    if: "${{ failure() }}"
+
+  - id: on-success
+    run: echo "This should be skipped"
+    needs: [might-fail]
+    if: "${{ success() }}"

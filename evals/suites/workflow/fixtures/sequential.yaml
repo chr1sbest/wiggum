@@ -1,0 +1,12 @@
+name: sequential-workflow
+steps:
+  - id: step1
+    run: echo "Step 1"
+
+  - id: step2
+    run: echo "Step 2"
+    needs: [step1]
+
+  - id: step3
+    run: echo "Step 3"
+    needs: [step2]

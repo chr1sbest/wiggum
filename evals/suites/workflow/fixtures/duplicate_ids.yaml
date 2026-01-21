@@ -1,0 +1,7 @@
+name: duplicate-workflow
+steps:
+  - id: step1
+    run: echo "First"
+
+  - id: step1
+    run: echo "Duplicate ID"

@@ -1,0 +1,8 @@
+name: output-workflow
+steps:
+  - id: producer
+    run: 'echo hello-from-producer'
+
+  - id: consumer
+    run: 'echo "Received: ${{ steps.producer.output }}"'
+    needs: [producer]

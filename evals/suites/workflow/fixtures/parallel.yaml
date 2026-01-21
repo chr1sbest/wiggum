@@ -1,0 +1,20 @@
+name: parallel-workflow
+steps:
+  - id: setup
+    run: echo "Setup complete"
+
+  - id: task-a
+    run: echo "Task A"
+    needs: [setup]
+
+  - id: task-b
+    run: echo "Task B"
+    needs: [setup]
+
+  - id: task-c
+    run: echo "Task C"
+    needs: [setup]
+
+  - id: finish
+    run: echo "All tasks done"
+    needs: [task-a, task-b, task-c]

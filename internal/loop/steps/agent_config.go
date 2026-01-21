@@ -38,7 +38,7 @@ func DefaultAgentConfig() AgentConfig {
 		MarkerFile:         "",
 		AllowedTools:       "Write,Read,Edit,Glob,Grep,Bash,Task,TodoWrite,WebFetch,WebSearch",
 		Timeout:            "15m",
-		SessionFile:        ".ralph_session",
+		SessionFile:        ".ralph/.ralph_session",
 		SessionExpiryHours: 24,
 		ClaudeBinary:       "claude",
 		OutputFormat:       "json",

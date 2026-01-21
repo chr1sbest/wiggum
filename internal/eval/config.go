@@ -7,7 +7,7 @@ import (
 
 // Default configuration values
 const (
-	DefaultTimeoutSeconds = 7200 // 2 hours
+	DefaultTimeoutSeconds = 2700 // 45 minutes
 	ApproachRalph         = "ralph"
 	ApproachOneshot       = "oneshot"
 )

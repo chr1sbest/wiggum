@@ -1,0 +1,12 @@
+name: retry-workflow
+steps:
+  - id: flaky
+    run: |
+      if [ ! -f /tmp/workflow_retry_test ]; then
+        touch /tmp/workflow_retry_test
+        exit 1
+      fi
+      rm /tmp/workflow_retry_test
+      echo "Success on retry"
+    retries: 2
+    retry_delay: 1s

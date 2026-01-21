@@ -1,0 +1,6 @@
+name: workflow
+description: Workflow/pipeline engine CLI with dependencies, conditions, and parallel execution
+requirements: examples/workflow_engine_requirements.md
+language: go
+type: cli
+timeout: 45m

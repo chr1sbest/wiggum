@@ -1,0 +1,5 @@
+name: timeout-workflow
+steps:
+  - id: slow
+    run: sleep 10
+    timeout: 1s

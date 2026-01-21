@@ -1,0 +1,4 @@
+name: simple-workflow
+steps:
+  - id: hello
+    run: echo "Hello, World!"

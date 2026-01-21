@@ -3,7 +3,7 @@ description: REST API with JWT auth, 4 models, ~15 endpoints
 requirements: examples/task_tracker_requirements.md
 language: python
 type: web
-timeout: 2h
+timeout: 45m
 
 setup:
   - python3 -m venv venv

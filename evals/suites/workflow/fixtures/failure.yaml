@@ -1,0 +1,17 @@
+name: failure-workflow
+steps:
+  - id: succeed
+    run: echo "This succeeds"
+
+  - id: fail
+    run: exit 1
+    needs: [succeed]
+
+  - id: after-fail
+    run: echo "This should be skipped"
+    needs: [fail]
+
+  - id: always-run
+    run: echo "Always runs"
+    needs: [fail]
+    if: "${{ always() }}"

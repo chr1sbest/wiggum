@@ -1,0 +1,9 @@
+name: continue-on-error-workflow
+steps:
+  - id: flaky
+    run: exit 1
+    continue_on_error: true
+
+  - id: next
+    run: echo "This should run"
+    needs: [flaky]

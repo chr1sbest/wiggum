@@ -1,0 +1,3 @@
+name: empty-workflow
+vars:
+  unused: value

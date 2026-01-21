@@ -181,6 +181,8 @@ func runCLITests(projectDir string, suite *SuiteConfig) (*TestResult, error) {
 	switch suite.Name {
 	case "logagg":
 		return RunLogaggTests(appDir, fixturesDir)
+	case "workflow":
+		return RunWorkflowTests(appDir, fixturesDir)
 	default:
 		return nil, fmt.Errorf("no Go test runner for CLI suite: %s", suite.Name)
 	}

@@ -1,0 +1,22 @@
+name: condition-workflow
+vars:
+  deploy: "true"
+  env: production
+
+steps:
+  - id: build
+    run: echo "Building..."
+
+  - id: test
+    run: echo "Testing..."
+    needs: [build]
+
+  - id: deploy
+    run: 'echo "Deploying to ${{ vars.env }}"'
+    needs: [test]
+    if: "${{ vars.deploy == 'true' }}"
+
+  - id: skip-me
+    run: echo "This should be skipped"
+    needs: [build]
+    if: "${{ vars.deploy == 'false' }}"

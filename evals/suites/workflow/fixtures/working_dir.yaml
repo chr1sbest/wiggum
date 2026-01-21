@@ -1,0 +1,5 @@
+name: working-dir-workflow
+steps:
+  - id: check-dir
+    run: pwd
+    working_dir: /tmp

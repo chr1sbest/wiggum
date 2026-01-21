@@ -1,0 +1,7 @@
+name: env-workflow
+steps:
+  - id: with-env
+    run: echo "API_KEY is $API_KEY and SECRET is $SECRET"
+    env:
+      API_KEY: test-key-123
+      SECRET: super-secret

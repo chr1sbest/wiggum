@@ -1,0 +1,5 @@
+name: invalid-workflow
+steps:
+  - id: bad
+    run: echo "test"
+    this is not valid yaml: [

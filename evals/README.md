@@ -2,6 +2,17 @@
 
 Evaluation framework for comparing agent frameworks on code generation tasks.
 
+## Latest Results
+
+See **[RESULTS.md](RESULTS.md)** for the latest comparison data.
+
+| Suite | Ralph | Oneshot | Winner |
+|-------|-------|---------|--------|
+| workflow | 41/48 (85%) | 40/48 (83%) | Ralph +2.5% |
+| tasktracker | 26/28 (93%) | 23/28 (82%) | Ralph +13% |
+
+**Key finding:** Ralph costs 1.5-5x more and takes longer, but passes 2-13% more tests. The tradeoff favors Ralph when correctness matters more than speed or cost.
+
 ## Design Principles
 
 When writing evals, follow these principles:

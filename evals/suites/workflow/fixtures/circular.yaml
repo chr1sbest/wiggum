@@ -1,0 +1,13 @@
+name: circular-workflow
+steps:
+  - id: a
+    run: echo "A"
+    needs: [c]
+
+  - id: b
+    run: echo "B"
+    needs: [a]
+
+  - id: c
+    run: echo "C"
+    needs: [b]
